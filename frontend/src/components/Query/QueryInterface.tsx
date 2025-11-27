@@ -3,6 +3,7 @@ import { useMutation, useQuery } from '@tanstack/react-query';
 import { executeQuery, getDevices } from '../../api/endpoints';
 import { buildQuery, validateQueryConfig, exampleQueries } from '../../utils/queryBuilder';
 import { formatDate } from '../../utils/dateFormatter';
+import { parseSelectFields, getNestedValue, formatColumnHeader, formatCellValue } from '../../utils/queryParser';
 import type { QueryConfig, FrameType, TimeRangeType } from '../../types/api';
 import { useSearchParams } from 'react-router-dom';
 
@@ -12,6 +13,8 @@ export const QueryInterface: React.FC = () => {
 
   const [queryText, setQueryText] = useState('');
   const [useBuilder, setUseBuilder] = useState(true);
+  const [customFieldsInput, setCustomFieldsInput] = useState('');
+  const [executedQuery, setExecutedQuery] = useState<string>(''); // Track the executed query
   const [config, setConfig] = useState<QueryConfig>({
     devEui: initialDevEui,
     frameType: 'all',
@@ -30,12 +33,19 @@ export const QueryInterface: React.FC = () => {
     let query: string;
 
     if (useBuilder) {
-      const error = validateQueryConfig(config);
+      // Create a working config with parsed custom fields
+      const workingConfig = { ...config };
+      if (config.frameType === 'custom' && customFieldsInput) {
+        const parsedFields = customFieldsInput.split(',').map(f => f.trim()).filter(f => f.length > 0);
+        workingConfig.customFields = parsedFields;
+      }
+
+      const error = validateQueryConfig(workingConfig);
       if (error) {
         alert(error);
         return;
       }
-      query = buildQuery(config);
+      query = buildQuery(workingConfig);
     } else {
       query = queryText.trim();
     }
@@ -45,6 +55,7 @@ export const QueryInterface: React.FC = () => {
       return;
     }
 
+    setExecutedQuery(query); // Store the executed query for dynamic columns
     mutation.mutate({ query });
   };
 
@@ -96,12 +107,16 @@ export const QueryInterface: React.FC = () => {
               <input
                 className="form-control"
                 type="text"
-                placeholder="e.g., f_port, f_cnt, decoded_payload.object.BatV, decoded_payload.object.TempC_SHT"
-                value={config.customFields?.join(', ') || ''}
-                onChange={(e) => updateConfig({ customFields: e.target.value.split(',').map(f => f.trim()).filter(f => f.length > 0) })}
+                placeholder="e.g., received_at, f_port, f_cnt, decoded_payload.object.BatV, decoded_payload.object.TempC_SHT"
+                value={customFieldsInput}
+                onChange={(e) => setCustomFieldsInput(e.target.value)}
+                onBlur={(e) => {
+                  const parsedFields = e.target.value.split(',').map(f => f.trim()).filter(f => f.length > 0);
+                  updateConfig({ customFields: parsedFields });
+                }}
               />
               <small style={{ color: '#666', fontSize: '12px', marginTop: '5px', display: 'block' }}>
-                Examples: decoded_payload.object.BatV, rx_info.rssi, dr.spreading_factor
+                Examples: received_at, decoded_payload.object.BatV, rx_info.rssi, dr.spreading_factor
               </small>
             </div>
           )}
@@ -157,7 +172,12 @@ export const QueryInterface: React.FC = () => {
           )}
 
           <div className="alert alert-info">
-            Generated query: <code>{buildQuery(config)}</code>
+            Generated query: <code>{buildQuery({
+              ...config,
+              customFields: config.frameType === 'custom' && customFieldsInput
+                ? customFieldsInput.split(',').map(f => f.trim()).filter(f => f.length > 0)
+                : config.customFields
+            })}</code>
           </div>
 
           <button className="btn btn-primary" onClick={handleExecute} disabled={mutation.isPending}>
@@ -195,62 +215,120 @@ export const QueryInterface: React.FC = () => {
         </div>
       )}
 
-      {mutation.isSuccess && mutation.data && (
-        <div className="card">
-          <div className="card-header">Results</div>
-          <div className="query-stats">
-            <div className="stat-card">
-              <div className="stat-label">Device EUI</div>
-              <div className="stat-value">{mutation.data.dev_eui}</div>
-            </div>
-            <div className="stat-card">
-              <div className="stat-label">Total Frames</div>
-              <div className="stat-value">{mutation.data.total_frames}</div>
-            </div>
-          </div>
+      {mutation.isSuccess && mutation.data && (() => {
+        // Parse the SELECT fields from the executed query
+        const selectedFields = parseSelectFields(executedQuery);
+        const useDynamicColumns = selectedFields && selectedFields.length > 0 && !['*', 'uplink', 'downlink', 'join', 'decoded_payload'].includes(selectedFields[0]);
 
-          <div className="table-container">
-            <table>
-              <thead>
-                <tr>
-                  <th>Received At</th>
-                  <th>F Port</th>
-                  <th>F Cnt</th>
-                  <th>{config.frameType === 'decoded_payload' ? 'Decoded Payload' : 'Data'}</th>
-                </tr>
-              </thead>
-              <tbody>
-                {mutation.data.frames.map((frame, i) => {
-                  // Extract actual frame data from nested structure (Uplink, Downlink, Join)
-                  // Or use the frame directly if it's not nested
-                  const frameData = frame.Uplink || frame.Downlink || frame.Join || frame;
+        return (
+          <div className="card">
+            <div className="card-header">Results</div>
+            <div className="query-stats">
+              <div className="stat-card">
+                <div className="stat-label">Device EUI</div>
+                <div className="stat-value">{mutation.data.dev_eui}</div>
+              </div>
+              <div className="stat-card">
+                <div className="stat-label">Total Frames</div>
+                <div className="stat-value">{mutation.data.total_frames}</div>
+              </div>
+            </div>
 
-                  return (
-                    <tr key={i}>
-                      <td>{formatDate(frameData?.received_at || frame?.received_at)}</td>
-                      <td>{frameData?.f_port ?? frame?.f_port ?? '-'}</td>
-                      <td>{frameData?.f_cnt ?? frame?.f_cnt ?? '-'}</td>
-                      <td>
-                        {config.frameType === 'decoded_payload' && frameData?.decoded_payload ? (
-                          <details open>
-                            <summary style={{ cursor: 'pointer' }}>View Decoded Payload</summary>
-                            <pre className="json-display">{JSON.stringify(frameData.decoded_payload, null, 2)}</pre>
-                          </details>
+            {/* Debug: Show raw response structure */}
+            <details style={{ marginBottom: '15px', padding: '10px', background: '#f5f5f5' }}>
+              <summary style={{ cursor: 'pointer', fontWeight: 'bold' }}>🔍 Debug: View Raw API Response</summary>
+              <pre className="json-display">{JSON.stringify(mutation.data, null, 2)}</pre>
+            </details>
+
+            <div className="table-container">
+              <table>
+                <thead>
+                  <tr>
+                    {useDynamicColumns && selectedFields ? (
+                      // Dynamic columns based on SELECT fields
+                      selectedFields.map((field, i) => (
+                        <th key={i}>{formatColumnHeader(field)}</th>
+                      ))
+                    ) : (
+                      // Default columns for wildcard or frame type queries
+                      <>
+                        <th>Received At</th>
+                        <th>F Port</th>
+                        <th>F Cnt</th>
+                        <th>{config.frameType === 'decoded_payload' ? 'Decoded Payload' : 'Data'}</th>
+                      </>
+                    )}
+                  </tr>
+                </thead>
+                <tbody>
+                  {mutation.data.frames.map((frame, i) => {
+                    // Extract actual frame data from nested structure (Uplink, Downlink, Join)
+                    // Or use the frame directly if it's not nested
+                    const frameData = frame.Uplink || frame.Downlink || frame.Join || frame;
+
+                    return (
+                      <tr key={i}>
+                        {useDynamicColumns && selectedFields ? (
+                          // Dynamic cells based on SELECT fields
+                          selectedFields.map((field, j) => {
+                            // LoRaDB returns custom fields with the full path as the key
+                            // e.g., "decoded_payload.object.TempC_SHT" is the actual key, not nested
+                            let value = frameData?.[field] ?? frame?.[field];
+
+                            // If direct key lookup fails, try nested navigation (for wildcard queries)
+                            if (value === undefined) {
+                              value = getNestedValue(frameData, field) ?? getNestedValue(frame, field);
+                            }
+
+                            // Special formatting for received_at
+                            if (field === 'received_at') {
+                              return <td key={j}>{formatDate(value)}</td>;
+                            }
+
+                            // For complex objects, show as expandable JSON
+                            if (typeof value === 'object' && value !== null) {
+                              return (
+                                <td key={j}>
+                                  <details>
+                                    <summary style={{ cursor: 'pointer' }}>View Object</summary>
+                                    <pre className="json-display">{JSON.stringify(value, null, 2)}</pre>
+                                  </details>
+                                </td>
+                              );
+                            }
+
+                            return <td key={j}>{formatCellValue(value)}</td>;
+                          })
                         ) : (
-                          <details>
-                            <summary style={{ cursor: 'pointer' }}>View JSON</summary>
-                            <pre className="json-display">{JSON.stringify(frame, null, 2)}</pre>
-                          </details>
+                          // Default cells for wildcard or frame type queries
+                          <>
+                            <td>{formatDate(frameData?.received_at || frame?.received_at)}</td>
+                            <td>{frameData?.f_port ?? frame?.f_port ?? '-'}</td>
+                            <td>{frameData?.f_cnt ?? frame?.f_cnt ?? '-'}</td>
+                            <td>
+                              {config.frameType === 'decoded_payload' && frameData?.decoded_payload ? (
+                                <details open>
+                                  <summary style={{ cursor: 'pointer' }}>View Decoded Payload</summary>
+                                  <pre className="json-display">{JSON.stringify(frameData.decoded_payload, null, 2)}</pre>
+                                </details>
+                              ) : (
+                                <details>
+                                  <summary style={{ cursor: 'pointer' }}>View JSON</summary>
+                                  <pre className="json-display">{JSON.stringify(frame, null, 2)}</pre>
+                                </details>
+                              )}
+                            </td>
+                          </>
                         )}
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
           </div>
-        </div>
-      )}
+        );
+      })()}
     </div>
   );
 };
