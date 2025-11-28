@@ -90,6 +90,35 @@ export interface VerifyTokenResponse {
   issuedAt?: string;
 }
 
+// API Token Management
+export interface CreateApiTokenRequest {
+  name: string;
+  expires_in_days?: number;
+}
+
+export interface CreateApiTokenResponse {
+  token: string;
+  id: string;
+  name: string;
+  created_at: string;
+  expires_at: string | null;
+}
+
+export interface ApiTokenInfo {
+  id: string;
+  name: string;
+  created_by: string;
+  created_at: string;
+  last_used_at: string | null;
+  expires_at: string | null;
+  is_active: boolean;
+}
+
+export interface ListApiTokensResponse {
+  total: number;
+  tokens: ApiTokenInfo[];
+}
+
 // Error Response
 export interface ErrorResponse {
   error: string;
@@ -115,4 +144,31 @@ export interface QueryConfig {
   endDate?: string;
   // Custom fields
   customFields?: string[];
+}
+
+// Retention Policies
+export interface ApplicationRetentionPolicy {
+  application_id: string;
+  days: number | null; // null means "never" (keep forever)
+  created_at: string;
+  updated_at: string;
+}
+
+export interface RetentionPoliciesResponse {
+  global_days: number | null; // null means no global policy
+  check_interval_hours: number;
+  applications: ApplicationRetentionPolicy[];
+}
+
+export interface GlobalRetentionPolicyResponse {
+  days: number | null;
+}
+
+export interface SetRetentionPolicyRequest {
+  days: number | null; // null means "never" (keep forever)
+}
+
+export interface RetentionEnforceResponse {
+  message: string;
+  deleted_sstables?: number;
 }

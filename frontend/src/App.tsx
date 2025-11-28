@@ -9,6 +9,7 @@ import { Dashboard } from './components/Layout/Dashboard';
 import { DeviceList } from './components/Devices/DeviceList';
 import { QueryInterface } from './components/Query/QueryInterface';
 import { TokenManagement } from './components/Tokens/TokenManagement';
+import { RetentionPolicies } from './components/Retention/RetentionPolicies';
 import { Settings } from './components/Settings/Settings';
 import './styles.css';
 
@@ -33,6 +34,7 @@ const Home: React.FC = () => (
         <li>View and manage devices</li>
         <li>Execute queries against LoRaDB</li>
         <li>Create and manage API tokens for long-lived access</li>
+        <li>Configure data retention policies to automatically delete old data</li>
       </ul>
     </div>
   </div>
@@ -52,6 +54,7 @@ function App() {
                   <Route path="devices" element={<DeviceList />} />
                   <Route path="query" element={<QueryInterface />} />
                   <Route path="tokens" element={<TokenManagement />} />
+                  <Route path="retention" element={<RetentionPolicies />} />
                   <Route path="settings" element={<Settings />} />
                 </Route>
                 <Route path="*" element={<Navigate to="/" replace />} />

@@ -49,6 +49,24 @@ const handleLoraDbError = (error: unknown, res: Response): void => {
       });
       return;
     }
+
+    // Handle DNS resolution errors
+    if (axiosError.code === 'EAI_AGAIN' || axiosError.code === 'ENOTFOUND' || axiosError.code === 'EAIAGAIN') {
+      res.status(503).json({
+        error: 'DNSResolutionFailed',
+        message: `Cannot resolve LoRaDB API hostname: ${config.loradbApiUrl}`,
+      });
+      return;
+    }
+
+    // Handle other network errors
+    if (axiosError.code === 'ECONNRESET' || axiosError.code === 'ECONNABORTED') {
+      res.status(503).json({
+        error: 'ConnectionError',
+        message: 'Connection to LoRaDB API was interrupted',
+      });
+      return;
+    }
   }
 
   console.error('Unexpected error:', error);
@@ -109,6 +127,160 @@ router.get('/devices/:dev_eui', async (req: Request, res: Response) => {
   try {
     const { dev_eui } = req.params;
     const response = await loradbClient.get(`/devices/${dev_eui}`, {
+      headers: getAuthHeader(req),
+    });
+    res.json(response.data);
+  } catch (error) {
+    handleLoraDbError(error, res);
+  }
+});
+
+/**
+ * POST /api/tokens
+ * Create a new API token (auth required)
+ */
+router.post('/tokens', async (req: Request, res: Response) => {
+  try {
+    const response = await loradbClient.post('/tokens', req.body, {
+      headers: getAuthHeader(req),
+    });
+    res.json(response.data);
+  } catch (error) {
+    handleLoraDbError(error, res);
+  }
+});
+
+/**
+ * GET /api/tokens
+ * List all API tokens (auth required)
+ */
+router.get('/tokens', async (req: Request, res: Response) => {
+  try {
+    const response = await loradbClient.get('/tokens', {
+      headers: getAuthHeader(req),
+    });
+    res.json(response.data);
+  } catch (error) {
+    handleLoraDbError(error, res);
+  }
+});
+
+/**
+ * DELETE /api/tokens/:id
+ * Revoke an API token (auth required)
+ */
+router.delete('/tokens/:id', async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    const response = await loradbClient.delete(`/tokens/${id}`, {
+      headers: getAuthHeader(req),
+    });
+    res.json(response.data);
+  } catch (error) {
+    handleLoraDbError(error, res);
+  }
+});
+
+/**
+ * GET /api/retention/policies
+ * List all retention policies (auth required)
+ */
+router.get('/retention/policies', async (req: Request, res: Response) => {
+  try {
+    const response = await loradbClient.get('/retention/policies', {
+      headers: getAuthHeader(req),
+    });
+    res.json(response.data);
+  } catch (error) {
+    handleLoraDbError(error, res);
+  }
+});
+
+/**
+ * GET /api/retention/policies/global
+ * Get global retention policy (auth required)
+ */
+router.get('/retention/policies/global', async (req: Request, res: Response) => {
+  try {
+    const response = await loradbClient.get('/retention/policies/global', {
+      headers: getAuthHeader(req),
+    });
+    res.json(response.data);
+  } catch (error) {
+    handleLoraDbError(error, res);
+  }
+});
+
+/**
+ * PUT /api/retention/policies/global
+ * Set global retention policy (auth required)
+ */
+router.put('/retention/policies/global', async (req: Request, res: Response) => {
+  try {
+    const response = await loradbClient.put('/retention/policies/global', req.body, {
+      headers: getAuthHeader(req),
+    });
+    res.json(response.data);
+  } catch (error) {
+    handleLoraDbError(error, res);
+  }
+});
+
+/**
+ * GET /api/retention/policies/:application_id
+ * Get application-specific retention policy (auth required)
+ */
+router.get('/retention/policies/:application_id', async (req: Request, res: Response) => {
+  try {
+    const { application_id } = req.params;
+    const response = await loradbClient.get(`/retention/policies/${application_id}`, {
+      headers: getAuthHeader(req),
+    });
+    res.json(response.data);
+  } catch (error) {
+    handleLoraDbError(error, res);
+  }
+});
+
+/**
+ * PUT /api/retention/policies/:application_id
+ * Set application-specific retention policy (auth required)
+ */
+router.put('/retention/policies/:application_id', async (req: Request, res: Response) => {
+  try {
+    const { application_id } = req.params;
+    const response = await loradbClient.put(`/retention/policies/${application_id}`, req.body, {
+      headers: getAuthHeader(req),
+    });
+    res.json(response.data);
+  } catch (error) {
+    handleLoraDbError(error, res);
+  }
+});
+
+/**
+ * DELETE /api/retention/policies/:application_id
+ * Remove application-specific retention policy (auth required)
+ */
+router.delete('/retention/policies/:application_id', async (req: Request, res: Response) => {
+  try {
+    const { application_id } = req.params;
+    const response = await loradbClient.delete(`/retention/policies/${application_id}`, {
+      headers: getAuthHeader(req),
+    });
+    res.json(response.data);
+  } catch (error) {
+    handleLoraDbError(error, res);
+  }
+});
+
+/**
+ * POST /api/retention/enforce
+ * Trigger immediate retention enforcement (auth required)
+ */
+router.post('/retention/enforce', async (req: Request, res: Response) => {
+  try {
+    const response = await loradbClient.post('/retention/enforce', req.body, {
       headers: getAuthHeader(req),
     });
     res.json(response.data);
