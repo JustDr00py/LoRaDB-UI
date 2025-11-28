@@ -6,10 +6,12 @@ import { formatDate } from '../../utils/dateFormatter';
 import { parseSelectFields, getNestedValue, formatColumnHeader, formatCellValue } from '../../utils/queryParser';
 import type { QueryConfig, FrameType, TimeRangeType } from '../../types/api';
 import { useSearchParams } from 'react-router-dom';
+import { useSettings } from '../../context/SettingsContext';
 
 export const QueryInterface: React.FC = () => {
   const [searchParams] = useSearchParams();
   const initialDevEui = searchParams.get('devEui') || '';
+  const { showDebugView } = useSettings();
 
   const [queryText, setQueryText] = useState('');
   const [useBuilder, setUseBuilder] = useState(true);
@@ -235,10 +237,12 @@ export const QueryInterface: React.FC = () => {
             </div>
 
             {/* Debug: Show raw response structure */}
-            <details style={{ marginBottom: '15px', padding: '10px', background: '#f5f5f5' }}>
-              <summary style={{ cursor: 'pointer', fontWeight: 'bold' }}>🔍 Debug: View Raw API Response</summary>
-              <pre className="json-display">{JSON.stringify(mutation.data, null, 2)}</pre>
-            </details>
+            {showDebugView && (
+              <details style={{ marginBottom: '15px', padding: '10px', background: '#f5f5f5' }}>
+                <summary style={{ cursor: 'pointer', fontWeight: 'bold' }}>🔍 Debug: View Raw API Response</summary>
+                <pre className="json-display">{JSON.stringify(mutation.data, null, 2)}</pre>
+              </details>
+            )}
 
             <div className="table-container">
               <table>
