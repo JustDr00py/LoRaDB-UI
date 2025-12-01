@@ -18,6 +18,10 @@ services:
       - "${BACKEND_PORT:-3001}:3001"
     networks:
       - loradb-network
+    dns:
+      - 8.8.8.8
+      - 8.8.4.4
+      - 1.1.1.1
     healthcheck:
       test: ["CMD", "node", "-e", "require('http').get('http://localhost:3001/', (r) => {process.exit(r.statusCode === 200 ? 0 : 1)})"]
       interval: 30s
