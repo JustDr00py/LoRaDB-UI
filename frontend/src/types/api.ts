@@ -127,7 +127,7 @@ export interface ErrorResponse {
 }
 
 // Query DSL Types
-export type FrameType = 'all' | 'uplink' | 'downlink' | 'join' | 'decoded_payload' | 'custom';
+export type FrameType = 'all' | 'uplink' | 'join' | 'decoded_payload' | 'custom';
 export type TimeRangeType = 'last' | 'since' | 'between' | 'none';
 
 export interface QueryConfig {
