@@ -1,4 +1,4 @@
-import type { FrameData, RxInfo } from '../types/api';
+import type { FrameData, RxInfo, FrequencyDistribution } from '../types/api';
 
 /**
  * Parameters for LoRaWAN airtime calculation using Semtech formula
@@ -366,6 +366,33 @@ export function analyzeSpreadingFactor(frames: FrameData[]): SpreadingFactorDist
 }
 
 /**
+ * Analyze frequency distribution across frames
+ * Converts Hz to MHz and groups by frequency
+ */
+export function analyzeFrequency(frames: FrameData[]): FrequencyDistribution {
+  const frequencyCount: Record<string, number> = {};
+
+  frames.forEach((frame) => {
+    if (frame.frequency !== undefined) {
+      // Convert Hz to MHz with 3 decimal precision (e.g., 868100000 -> "868.100")
+      const frequencyMHz = (frame.frequency / 1000000).toFixed(3);
+      frequencyCount[frequencyMHz] = (frequencyCount[frequencyMHz] || 0) + 1;
+    }
+  });
+
+  const total = Object.values(frequencyCount).reduce((a, b) => a + b, 0);
+
+  // Sort frequencies numerically
+  const frequencies = Object.keys(frequencyCount).sort((a, b) => parseFloat(a) - parseFloat(b));
+
+  return {
+    ...frequencyCount,
+    total,
+    frequencies,
+  };
+}
+
+/**
  * Calculate energy impact of transmissions
  */
 export function calculateEnergyImpact(
@@ -448,6 +475,10 @@ export function prepareTimeSeriesData(frames: FrameData[]): TimeSeriesDataPoint[
         gatewayCount = frame.rx_info.length;
       }
 
+      // Extract and convert frequency from Hz to MHz
+      const frequencyHz = frame.frequency;
+      const frequencyMHz = frequencyHz !== undefined ? frequencyHz / 1000000 : undefined;
+
       return {
         timestamp: frame.received_at,
         timestampMs: new Date(frame.received_at).getTime(),
@@ -457,6 +488,7 @@ export function prepareTimeSeriesData(frames: FrameData[]): TimeSeriesDataPoint[
         airtime,
         energy: airtime ? (airtime / 3600000) * 40 : undefined, // Using 40mA default
         gatewayCount,
+        frequency: frequencyMHz,
       };
     })
     .sort((a, b) => a.timestampMs - b.timestampMs);

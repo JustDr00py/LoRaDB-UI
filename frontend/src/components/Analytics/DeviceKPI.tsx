@@ -8,6 +8,7 @@ import {
   calculateEnergyImpact,
   prepareTimeSeriesData,
   getDominantSpreadingFactor,
+  analyzeFrequency,
 } from '../../utils/kpiCalculations';
 import type { FrameData } from '../../types/api';
 import { TimeRangeSelector, type TimeRange } from './TimeRangeSelector';
@@ -16,6 +17,7 @@ import { SignalQualityChart } from './SignalQualityChart';
 import { SpreadingFactorChart } from './SpreadingFactorChart';
 import { AirtimeChart } from './AirtimeChart';
 import { EnergyChart } from './EnergyChart';
+import { FrequencyChart } from './FrequencyChart';
 
 export const DeviceKPI: React.FC = () => {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -78,6 +80,7 @@ export const DeviceKPI: React.FC = () => {
     const signalQuality = calculateSignalQuality(uplinkFrames);
     const spreadingFactor = analyzeSpreadingFactor(uplinkFrames);
     const energy = calculateEnergyImpact(uplinkFrames);
+    const frequency = analyzeFrequency(uplinkFrames);
 
     // Calculate average airtime
     const airtimeValues = timeSeries.filter((d) => d.airtime !== undefined).map((d) => d.airtime!);
@@ -92,6 +95,7 @@ export const DeviceKPI: React.FC = () => {
       energy,
       averageAirtime,
       dominantSF: getDominantSpreadingFactor(spreadingFactor),
+      frequency,
     };
   }, [queryData]);
 
@@ -198,6 +202,12 @@ export const DeviceKPI: React.FC = () => {
 
               {/* Energy Chart */}
               <EnergyChart data={kpiData.timeSeries} />
+
+              {/* Frequency Charts */}
+              <FrequencyChart
+                distribution={kpiData.frequency}
+                timeSeries={kpiData.timeSeries}
+              />
             </>
           )}
         </>

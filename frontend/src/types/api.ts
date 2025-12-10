@@ -212,6 +212,12 @@ export interface EnergyMetrics {
   energyBySpreadingFactor: Record<string, number>;
 }
 
+export interface FrequencyDistribution {
+  [key: string]: number | string[];  // frequency string -> count, plus metadata arrays
+  total: number;
+  frequencies: string[];  // Sorted unique frequencies
+}
+
 export interface TimeSeriesDataPoint {
   timestamp: string;
   timestampMs: number;
@@ -221,4 +227,5 @@ export interface TimeSeriesDataPoint {
   airtime?: number;
   energy?: number;
   gatewayCount?: number;
+  frequency?: number;  // Frequency in MHz
 }
