@@ -172,3 +172,53 @@ export interface RetentionEnforceResponse {
   message: string;
   deleted_sstables?: number;
 }
+
+// KPI Analytics Types
+export interface KPISummary {
+  totalTransmissions: number;
+  averageRSSI: number;
+  averageSNR: number;
+  averageAirtime: number;
+  totalEnergyMah: number;
+  dominantSpreadingFactor: string;
+  uniqueGateways: number;
+}
+
+export interface SignalQualityMetrics {
+  averageRSSI: number;
+  minRSSI: number;
+  maxRSSI: number;
+  averageSNR: number;
+  minSNR: number;
+  maxSNR: number;
+  gatewayCount: number;
+  gateways: Map<string, { rssi: number; snr: number; count: number }>;
+}
+
+export interface SpreadingFactorDistribution {
+  SF7: number;
+  SF8: number;
+  SF9: number;
+  SF10: number;
+  SF11: number;
+  SF12: number;
+  total: number;
+  percentages: Record<string, number>;
+}
+
+export interface EnergyMetrics {
+  totalEnergyMah: number;
+  averageEnergyPerTx: number;
+  energyBySpreadingFactor: Record<string, number>;
+}
+
+export interface TimeSeriesDataPoint {
+  timestamp: string;
+  timestampMs: number;
+  rssi?: number;
+  snr?: number;
+  spreadingFactor?: number;
+  airtime?: number;
+  energy?: number;
+  gatewayCount?: number;
+}
