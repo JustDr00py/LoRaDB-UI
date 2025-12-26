@@ -10,10 +10,12 @@ services:
     environment:
       - PORT=3001
       - NODE_ENV=production
-      - LORADB_API_URL=${LORADB_API_URL:-http://loradb:8080}
       - JWT_SECRET=${JWT_SECRET}
       - JWT_EXPIRATION_HOURS=${JWT_EXPIRATION_HOURS:-1}
       - CORS_ORIGIN=${CORS_ORIGIN:-http://localhost:3000}
+      - DATABASE_PATH=/app/data/servers.db
+    volumes:
+      - loradb-ui-data:/app/data
     ports:
       - "${BACKEND_PORT:-3001}:3001"
     networks:
@@ -53,3 +55,7 @@ services:
 networks:
   loradb-network:
     driver: bridge
+
+volumes:
+  loradb-ui-data:
+    driver: local

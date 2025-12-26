@@ -4,7 +4,8 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { AuthProvider } from './context/AuthContext';
 import { SettingsProvider } from './context/SettingsContext';
 import { ErrorBoundary } from './components/Common/ErrorBoundary';
-import { Login } from './components/Auth/Login';
+import ServerWelcome from './components/Servers/ServerWelcome';
+import ServerManagement from './components/Servers/ServerManagement';
 import { Dashboard } from './components/Layout/Dashboard';
 import { DeviceList } from './components/Devices/DeviceList';
 import { QueryInterface } from './components/Query/QueryInterface';
@@ -49,7 +50,8 @@ function App() {
           <AuthProvider>
             <BrowserRouter>
               <Routes>
-                <Route path="/login" element={<Login />} />
+                <Route path="/servers" element={<ServerWelcome />} />
+                <Route path="/servers/manage" element={<ServerManagement />} />
                 <Route path="/" element={<Dashboard />}>
                   <Route index element={<Home />} />
                   <Route path="devices" element={<DeviceList />} />

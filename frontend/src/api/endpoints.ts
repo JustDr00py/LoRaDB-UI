@@ -5,8 +5,6 @@ import type {
   DeviceInfo,
   QueryRequest,
   QueryResult,
-  GenerateTokenRequest,
-  TokenResponse,
   VerifyTokenRequest,
   VerifyTokenResponse,
   CreateApiTokenRequest,
@@ -16,21 +14,64 @@ import type {
   GlobalRetentionPolicyResponse,
   SetRetentionPolicyRequest,
   RetentionEnforceResponse,
+  Server,
+  ServerListResponse,
+  CreateServerRequest,
+  AuthenticateServerRequest,
+  SessionResponse,
+  ConnectionTestResponse,
 } from '../types/api';
 
-// Authentication
-export const generateToken = async (
-  data: GenerateTokenRequest
-): Promise<TokenResponse> => {
-  const response = await apiClient.post<TokenResponse>('/api/auth/generate-token', data);
+// Server Management
+export const listServers = async (): Promise<ServerListResponse> => {
+  const response = await apiClient.get<ServerListResponse>('/api/servers');
   return response.data;
 };
 
+export const createServer = async (data: CreateServerRequest): Promise<Server> => {
+  const response = await apiClient.post<Server>('/api/servers', data);
+  return response.data;
+};
+
+export const getServer = async (serverId: number): Promise<Server> => {
+  const response = await apiClient.get<Server>(`/api/servers/${serverId}`);
+  return response.data;
+};
+
+export const authenticateServer = async (
+  serverId: number,
+  data: AuthenticateServerRequest
+): Promise<SessionResponse> => {
+  const response = await apiClient.post<SessionResponse>(
+    `/api/servers/${serverId}/authenticate`,
+    data
+  );
+  return response.data;
+};
+
+export const deleteServer = async (serverId: number): Promise<void> => {
+  await apiClient.delete(`/api/servers/${serverId}`);
+};
+
+export const testServerConnection = async (
+  serverId: number
+): Promise<ConnectionTestResponse> => {
+  const response = await apiClient.post<ConnectionTestResponse>(
+    `/api/servers/${serverId}/test-connection`
+  );
+  return response.data;
+};
+
+// Authentication
 export const verifyToken = async (
   data: VerifyTokenRequest
 ): Promise<VerifyTokenResponse> => {
   const response = await apiClient.post<VerifyTokenResponse>('/api/auth/verify-token', data);
   return response.data;
+};
+
+export const logout = async (): Promise<void> => {
+  await apiClient.post('/api/auth/logout');
 };
 
 // Health Check

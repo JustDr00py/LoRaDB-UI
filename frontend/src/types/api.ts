@@ -66,6 +66,42 @@ export interface RxInfo {
   [key: string]: any;
 }
 
+// Server Management
+export interface Server {
+  id: number;
+  name: string;
+  host: string;
+  created_at: string;
+}
+
+export interface CreateServerRequest {
+  name: string;
+  host: string;
+  apiKey: string;
+  password: string;
+  passwordConfirm: string;
+}
+
+export interface ServerListResponse {
+  servers: Server[];
+}
+
+export interface AuthenticateServerRequest {
+  password: string;
+}
+
+export interface SessionResponse {
+  token: string;
+  expiresAt: string;
+  server: Server;
+}
+
+export interface ConnectionTestResponse {
+  success: boolean;
+  message: string;
+  data?: any;
+}
+
 // Authentication
 export interface GenerateTokenRequest {
   username: string;
