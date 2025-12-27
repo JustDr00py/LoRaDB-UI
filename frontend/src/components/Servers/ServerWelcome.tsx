@@ -11,6 +11,7 @@ const ServerWelcome: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [showAddModal, setShowAddModal] = useState(false);
   const [selectedServer, setSelectedServer] = useState<Server | null>(null);
+  const [selectedServerId, setSelectedServerId] = useState<string>('');
   const [showPasswordModal, setShowPasswordModal] = useState(false);
 
   useEffect(() => {
@@ -34,9 +35,12 @@ const ServerWelcome: React.FC = () => {
     loadServers();
   };
 
-  const handleSelectServer = (server: Server) => {
-    setSelectedServer(server);
-    setShowPasswordModal(true);
+  const handleConnectClick = () => {
+    const server = servers.find(s => s.id.toString() === selectedServerId);
+    if (server) {
+      setSelectedServer(server);
+      setShowPasswordModal(true);
+    }
   };
 
   const handleAuthSuccess = () => {
@@ -72,36 +76,37 @@ const ServerWelcome: React.FC = () => {
         ) : (
           <div>
             <div style={{ marginBottom: '20px' }}>
-              <h3 style={{ fontSize: '1rem', marginBottom: '10px' }}>Available Servers</h3>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+              <label htmlFor="server-select" style={{ display: 'block', marginBottom: '8px', fontWeight: '500' }}>
+                Select Server
+              </label>
+              <select
+                id="server-select"
+                value={selectedServerId}
+                onChange={(e) => setSelectedServerId(e.target.value)}
+                className="form-input"
+                style={{ width: '100%', marginBottom: '15px' }}
+              >
+                <option value="">-- Choose a server --</option>
                 {servers.map((server) => (
-                  <button
-                    key={server.id}
-                    onClick={() => handleSelectServer(server)}
-                    className="btn btn-secondary"
-                    style={{
-                      width: '100%',
-                      textAlign: 'left',
-                      padding: '15px',
-                      display: 'flex',
-                      flexDirection: 'column',
-                      gap: '5px',
-                    }}
-                  >
-                    <div style={{ fontWeight: 'bold', fontSize: '1rem' }}>
-                      {server.name}
-                    </div>
-                    <div style={{ fontSize: '0.875rem', opacity: 0.8 }}>
-                      {server.host}
-                    </div>
-                  </button>
+                  <option key={server.id} value={server.id}>
+                    {server.name} ({server.host})
+                  </option>
                 ))}
-              </div>
+              </select>
+
+              <button
+                onClick={handleConnectClick}
+                disabled={!selectedServerId}
+                className="btn btn-primary"
+                style={{ width: '100%', marginBottom: '15px' }}
+              >
+                Connect
+              </button>
             </div>
 
             <button
               onClick={() => setShowAddModal(true)}
-              className="btn btn-primary"
+              className="btn btn-secondary"
               style={{ width: '100%' }}
             >
               Add New Server
