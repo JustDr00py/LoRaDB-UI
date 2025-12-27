@@ -4,7 +4,7 @@ dotenv.config();
 
 export const config = {
   port: parseInt(process.env.PORT || '3001', 10),
-  jwtSecret: process.env.JWT_SECRET || process.env.LORADB_API_JWT_SECRET || '',
+  jwtSecret: process.env.JWT_SECRET || '',
   jwtExpirationHours: parseInt(process.env.JWT_EXPIRATION_HOURS || '1', 10),
   nodeEnv: process.env.NODE_ENV || 'development',
   corsOrigin: process.env.CORS_ORIGIN || 'http://localhost:3000',
