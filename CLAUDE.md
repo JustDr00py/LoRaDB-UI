@@ -116,6 +116,8 @@ Time units: `ms`, `s`, `m`, `h`, `d`, `w`
 - `PORT` - Backend port (default: 3001)
 - `JWT_EXPIRATION_HOURS` - Default token expiration (default: 1)
 - `CORS_ORIGIN` - Allowed frontend origin (default: `http://localhost:3000`)
+- `MASTER_PASSWORD` - Plaintext password for master password protection (minimum 8 characters, see section below)
+- `MASTER_SESSION_HOURS` - Master session duration in hours (default: 24)
 
 ### Frontend Environment Variables
 
@@ -130,6 +132,52 @@ For remote deployments:
 - `LORADB_API_URL` = IP/domain of LoRaDB server
 - `VITE_API_URL` = IP of UI server (for browser access)
 - `CORS_ORIGIN` = IP of UI server frontend
+
+### Master Password Protection
+
+Optional security layer that protects server management operations (add/edit/delete servers at `/servers/manage`).
+
+**Setup:**
+
+Simply add a password to your `.env` file:
+```bash
+# Add to .env file
+MASTER_PASSWORD=your-secure-password-here
+MASTER_SESSION_HOURS=24
+
+# Restart backend to apply changes
+docker compose restart backend
+```
+
+**Requirements:**
+- Minimum 8 characters
+- Maximum 72 characters
+- Any characters allowed
+
+**Configuration:**
+- `MASTER_PASSWORD` - Plaintext password (minimum 8 characters, required for protection)
+- `MASTER_SESSION_HOURS` - Session duration in hours (default: 24)
+
+**Behavior:**
+- If `MASTER_PASSWORD` is set: Users must enter master password before accessing `/servers/manage`
+- If not set: Server management is unprotected (backward compatible)
+- Master sessions expire after `MASTER_SESSION_HOURS` (default 24 hours)
+- Rate limited to 5 attempts per 15 minutes per IP address
+- Password verified using simple string comparison
+
+**Security Notes:**
+- Master password protects ONLY `/servers/manage` (create/update/delete operations)
+- GET operations (listing servers, testing connections) are not protected
+- Other admin features (Token Management, Retention Policies) remain protected by server authentication
+- Backend middleware (`backend/src/middleware/masterAuth.ts`) validates JWT tokens with type='master'
+- Frontend shows modal (`MasterPasswordModal.tsx`) when protection is enabled but user not authenticated
+- **Warning:** Password stored in plaintext in `.env` file - ensure file permissions are restricted (600)
+
+**Architecture:**
+- Backend: JWT token generation (`/api/auth/verify-master-password`) with plaintext password comparison
+- Frontend: React Context (`MasterAuthContext.tsx`) for session state, modal for password entry
+- Route protection: `MasterProtectedRoute` wrapper component checks authentication status
+- Token storage: localStorage with key `master_token` and expiration tracking
 
 ## State Management
 

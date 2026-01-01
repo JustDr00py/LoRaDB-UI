@@ -82,6 +82,11 @@ export interface CreateServerRequest {
   passwordConfirm: string;
 }
 
+export interface UpdateServerRequest {
+  name: string;
+  host: string;
+}
+
 export interface ServerListResponse {
   servers: Server[];
 }
@@ -124,6 +129,20 @@ export interface VerifyTokenResponse {
   username?: string;
   expiresAt?: string;
   issuedAt?: string;
+}
+
+// Master Password Authentication
+export interface VerifyMasterPasswordRequest {
+  password: string;
+}
+
+export interface MasterSessionResponse {
+  token: string;
+  expiresAt: string;
+}
+
+export interface MasterPasswordStatusResponse {
+  enabled: boolean;
 }
 
 // API Token Management

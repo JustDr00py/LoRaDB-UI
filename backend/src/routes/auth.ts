@@ -2,6 +2,7 @@ import { Router, Request, Response } from 'express';
 import jwt from 'jsonwebtoken';
 import { config } from '../config/env';
 import { serverRepository } from '../db/repositories/serverRepository';
+import { masterPasswordLimiter } from '../middleware/rateLimiter';
 
 const router = Router();
 
@@ -92,6 +93,84 @@ router.post('/logout', (_req: Request, res: Response): void => {
   res.json({
     message: 'Logged out successfully',
   });
+});
+
+/**
+ * GET /api/auth/master-password-status
+ * Check if master password protection is enabled
+ */
+router.get('/master-password-status', (_req: Request, res: Response): void => {
+  res.json({
+    enabled: !!(config.masterPassword && config.masterPassword.length > 0),
+  });
+});
+
+/**
+ * POST /api/auth/verify-master-password
+ * Verify master password and issue a master session token
+ * Rate limited: 5 attempts per 15 minutes per IP
+ */
+router.post('/verify-master-password', masterPasswordLimiter, async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { password } = req.body;
+
+    // Check if master password protection is enabled
+    if (!config.masterPassword || config.masterPassword.length === 0) {
+      res.status(400).json({
+        error: 'MasterPasswordNotConfigured',
+        message: 'Master password protection is not enabled',
+      });
+      return;
+    }
+
+    if (!password) {
+      res.status(400).json({
+        error: 'ValidationError',
+        message: 'Password is required',
+      });
+      return;
+    }
+
+    // Verify password (simple comparison)
+    const isValid = password === config.masterPassword;
+
+    if (!isValid) {
+      res.status(401).json({
+        error: 'InvalidPassword',
+        message: 'Invalid master password',
+      });
+      return;
+    }
+
+    // Generate master session token
+    const now = Math.floor(Date.now() / 1000);
+    const expirationSeconds = config.masterSessionHours * 60 * 60;
+
+    const token = jwt.sign(
+      {
+        type: 'master',
+        iat: now,
+        exp: now + expirationSeconds,
+      },
+      config.jwtSecret,
+      {
+        algorithm: 'HS256',
+      }
+    );
+
+    const expiresAt = new Date((now + expirationSeconds) * 1000).toISOString();
+
+    res.json({
+      token,
+      expiresAt,
+    });
+  } catch (error) {
+    console.error('Error verifying master password:', error);
+    res.status(500).json({
+      error: 'InternalError',
+      message: 'Failed to verify master password',
+    });
+  }
 });
 
 export default router;

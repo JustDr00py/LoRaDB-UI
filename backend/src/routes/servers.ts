@@ -4,6 +4,7 @@ import { authRepository } from '../db/repositories/authRepository';
 import { hashPassword, verifyPassword, validatePassword, passwordsMatch } from '../utils/password';
 import { encryptApiKey, clearCachedApiKey } from '../utils/encryption';
 import { serverCreationLimiter, serverDeletionLimiter, authLimiter } from '../middleware/rateLimiter';
+import { requireMasterAuth } from '../middleware/masterAuth';
 import jwt from 'jsonwebtoken';
 import { config } from '../config/env';
 import crypto from 'crypto';
@@ -54,8 +55,9 @@ function isValidHost(host: string): boolean {
  * POST /api/servers
  * Create a new server
  * Rate limited: 10 per hour per IP
+ * Requires master password authentication if configured
  */
-router.post('/', serverCreationLimiter, async (req: Request, res: Response) => {
+router.post('/', requireMasterAuth, serverCreationLimiter, async (req: Request, res: Response) => {
   try {
     const { name, host, apiKey, password, passwordConfirm } = req.body;
 
@@ -324,8 +326,9 @@ router.post('/:id/authenticate', authLimiter, async (req: Request, res: Response
  * DELETE /api/servers/:id
  * Delete a server
  * Rate limited: 20 per 15 minutes per IP
+ * Requires master password authentication if configured
  */
-router.delete('/:id', serverDeletionLimiter, (req: Request, res: Response) => {
+router.delete('/:id', requireMasterAuth, serverDeletionLimiter, (req: Request, res: Response) => {
   try {
     const serverId = parseInt(req.params.id, 10);
 
@@ -368,6 +371,105 @@ router.delete('/:id', serverDeletionLimiter, (req: Request, res: Response) => {
     return res.status(500).json({
       error: 'InternalServerError',
       message: 'Failed to delete server',
+    });
+  }
+});
+
+/**
+ * PUT /api/servers/:id
+ * Update server name and/or host
+ * Requires master password authentication if configured
+ */
+router.put('/:id', requireMasterAuth, async (req: Request, res: Response) => {
+  try {
+    const serverId = parseInt(req.params.id, 10);
+    const { name, host } = req.body;
+
+    if (isNaN(serverId)) {
+      return res.status(400).json({
+        error: 'ValidationError',
+        message: 'Invalid server ID',
+      });
+    }
+
+    // Get existing server
+    const server = serverRepository.findById(serverId);
+    if (!server) {
+      return res.status(404).json({
+        error: 'NotFound',
+        message: 'Server not found',
+      });
+    }
+
+    // Validate required fields
+    if (!name || !host) {
+      return res.status(400).json({
+        error: 'ValidationError',
+        message: 'Name and host are required',
+      });
+    }
+
+    // Validate server name
+    if (!isValidServerName(name)) {
+      return res.status(400).json({
+        error: 'ValidationError',
+        message: 'Server name can only contain letters, numbers, spaces, hyphens, and underscores',
+      });
+    }
+
+    // Validate host format
+    if (!isValidHost(host)) {
+      return res.status(400).json({
+        error: 'ValidationError',
+        message: 'Invalid host format. Use http://domain, https://domain, IP:port, or domain:port (e.g., https://ldb.example.com or 192.168.1.100:8080)',
+      });
+    }
+
+    // Check for duplicate name (exclude current server)
+    const existingWithName = serverRepository.listAll().find(
+      s => s.name === name && s.id !== serverId
+    );
+    if (existingWithName) {
+      return res.status(409).json({
+        error: 'DuplicateError',
+        message: 'A server with this name already exists',
+      });
+    }
+
+    // Check for duplicate host (exclude current server)
+    const existingWithHost = serverRepository.listAll().find(
+      s => s.host === host && s.id !== serverId
+    );
+    if (existingWithHost) {
+      return res.status(409).json({
+        error: 'DuplicateError',
+        message: 'A server with this host already exists',
+      });
+    }
+
+    // Update server
+    const updated = serverRepository.update(serverId, { name, host });
+
+    if (updated) {
+      console.log(`✏️  Server updated: ${name} (${host}) by ${getClientIp(req)}`);
+
+      return res.json({
+        id: updated.id,
+        name: updated.name,
+        host: updated.host,
+        created_at: updated.created_at,
+      });
+    } else {
+      return res.status(500).json({
+        error: 'InternalServerError',
+        message: 'Failed to update server',
+      });
+    }
+  } catch (error) {
+    console.error('Error updating server:', error);
+    return res.status(500).json({
+      error: 'InternalServerError',
+      message: 'Failed to update server',
     });
   }
 });

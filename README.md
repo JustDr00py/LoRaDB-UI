@@ -4,12 +4,15 @@ A web-based user interface for managing LoRaDB tokens and executing queries. Bui
 
 ## Features
 
+- **Server Management**: Multi-server configuration with encrypted credentials storage
+- **Master Password Protection**: Optional security layer for server management operations
 - **Token Management**: Generate JWT tokens with custom expiration times
 - **Device Management**: View all registered LoRaWAN devices with last activity
 - **Query Builder**: Visual query builder for LoRaDB's query DSL
 - **Query Editor**: Raw query editor with syntax examples
 - **Real-time Results**: Execute queries and view results in tables
 - **Remote Access**: Deploy on a separate machine and connect remotely
+- **Retention Policies**: Configure automatic data deletion policies
 
 ## Architecture
 
@@ -372,6 +375,8 @@ npm run build
 | `JWT_SECRET` | JWT secret key (must match LoRaDB) | - | Yes |
 | `LORADB_API_URL` | LoRaDB API endpoint | `http://loradb:8080` | Yes |
 | `JWT_EXPIRATION_HOURS` | Default token expiration | `1` | No |
+| `MASTER_PASSWORD` | Plaintext password for server management protection | - | No |
+| `MASTER_SESSION_HOURS` | Master session duration in hours | `24` | No |
 | `BACKEND_PORT` | Backend API port | `3001` | No |
 | `FRONTEND_PORT` | Frontend web server port | `3000` | No |
 | `CORS_ORIGIN` | Allowed frontend origin | `http://localhost:3000` | No |
@@ -446,6 +451,68 @@ docker network inspect loradb-network
 3. **CORS**: Restrict `CORS_ORIGIN` to your frontend domain in production
 4. **Firewall**: Only expose necessary ports (3000 for frontend)
 5. **Token Expiration**: Use reasonable expiration times (1-24 hours)
+6. **Master Password**: Enable master password protection for server management (see below)
+
+## Master Password Protection
+
+Protect your server management page (`/servers/manage`) with a master password. This optional security layer prevents unauthorized users from adding, editing, or deleting server configurations.
+
+### Setup Master Password
+
+Simply add a password to your `.env` file:
+
+```bash
+# Edit your .env file
+nano .env
+
+# Add these lines:
+MASTER_PASSWORD=your-secure-password-here
+MASTER_SESSION_HOURS=24
+
+# Restart backend to apply changes
+docker compose restart backend
+```
+
+### Requirements
+
+- **Minimum:** 8 characters
+- **Maximum:** 72 characters
+- Any characters allowed (letters, numbers, symbols)
+
+### Configuration
+
+Add these variables to your `.env` file:
+
+```bash
+# Master Password Protection (optional)
+MASTER_PASSWORD=your-secure-password-here
+MASTER_SESSION_HOURS=24
+```
+
+### How It Works
+
+- **Protected Operations**: Create, update, and delete servers
+- **Unprotected Operations**: View servers, test connections
+- **Session Duration**: 24 hours by default (configurable)
+- **Rate Limiting**: 5 failed attempts per 15 minutes
+- **Backward Compatible**: If not configured, server management remains unprotected
+
+### Security Notes
+
+- Password stored in plaintext in `.env` file - ensure proper file permissions (600)
+- Sessions are stored in browser localStorage
+- JWT tokens with type='master' for authentication
+- Only protects `/servers/manage` route
+- Other admin features (Tokens, Retention) use server-based authentication
+- Rate limited to 5 failed attempts per 15 minutes
+
+### Disabling Protection
+
+Simply remove or comment out `MASTER_PASSWORD` from `.env` and restart:
+
+```bash
+docker compose restart backend
+```
 
 ## Backup & Maintenance
 

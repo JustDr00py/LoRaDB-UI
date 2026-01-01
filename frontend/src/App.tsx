@@ -2,6 +2,7 @@ import React from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { AuthProvider } from './context/AuthContext';
+import { MasterAuthProvider } from './context/MasterAuthContext';
 import { SettingsProvider } from './context/SettingsContext';
 import { ErrorBoundary } from './components/Common/ErrorBoundary';
 import ServerWelcome from './components/Servers/ServerWelcome';
@@ -47,8 +48,9 @@ function App() {
     <ErrorBoundary>
       <QueryClientProvider client={queryClient}>
         <SettingsProvider>
-          <AuthProvider>
-            <BrowserRouter>
+          <MasterAuthProvider>
+            <AuthProvider>
+              <BrowserRouter>
               <Routes>
                 <Route path="/servers" element={<ServerWelcome />} />
                 <Route path="/servers/manage" element={<ServerManagement />} />
@@ -63,8 +65,9 @@ function App() {
                 </Route>
                 <Route path="*" element={<Navigate to="/" replace />} />
               </Routes>
-            </BrowserRouter>
-          </AuthProvider>
+              </BrowserRouter>
+            </AuthProvider>
+          </MasterAuthProvider>
         </SettingsProvider>
       </QueryClientProvider>
     </ErrorBoundary>

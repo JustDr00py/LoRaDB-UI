@@ -17,9 +17,12 @@ import type {
   Server,
   ServerListResponse,
   CreateServerRequest,
+  UpdateServerRequest,
   AuthenticateServerRequest,
   SessionResponse,
   ConnectionTestResponse,
+  MasterSessionResponse,
+  MasterPasswordStatusResponse,
 } from '../types/api';
 
 // Server Management
@@ -53,6 +56,14 @@ export const deleteServer = async (serverId: number): Promise<void> => {
   await apiClient.delete(`/api/servers/${serverId}`);
 };
 
+export const updateServer = async (
+  serverId: number,
+  data: UpdateServerRequest
+): Promise<Server> => {
+  const response = await apiClient.put<Server>(`/api/servers/${serverId}`, data);
+  return response.data;
+};
+
 export const testServerConnection = async (
   serverId: number
 ): Promise<ConnectionTestResponse> => {
@@ -72,6 +83,23 @@ export const verifyToken = async (
 
 export const logout = async (): Promise<void> => {
   await apiClient.post('/api/auth/logout');
+};
+
+export const verifyMasterPassword = async (
+  password: string
+): Promise<MasterSessionResponse> => {
+  const response = await apiClient.post<MasterSessionResponse>(
+    '/api/auth/verify-master-password',
+    { password }
+  );
+  return response.data;
+};
+
+export const getMasterPasswordStatus = async (): Promise<MasterPasswordStatusResponse> => {
+  const response = await apiClient.get<MasterPasswordStatusResponse>(
+    '/api/auth/master-password-status'
+  );
+  return response.data;
 };
 
 // Health Check

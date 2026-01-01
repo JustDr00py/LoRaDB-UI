@@ -12,13 +12,20 @@ const apiClient: AxiosInstance = axios.create({
   },
 });
 
-// Request interceptor - Add session token
+// Request interceptor - Add session token and master token
 apiClient.interceptors.request.use(
   (config) => {
     const token = localStorage.getItem('session_token');
     if (token && config.headers) {
       config.headers.Authorization = `Bearer ${token}`;
     }
+
+    // Add master token for server management operations
+    const masterToken = localStorage.getItem('master_token');
+    if (masterToken && config.headers) {
+      config.headers['X-Master-Token'] = masterToken;
+    }
+
     return config;
   },
   (error) => {

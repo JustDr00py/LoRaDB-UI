@@ -3,12 +3,15 @@ import { useNavigate } from 'react-router-dom';
 import { listServers, deleteServer, testServerConnection } from '../../api/endpoints';
 import { Server, ConnectionTestResponse } from '../../types/api';
 import AddServerModal from './AddServerModal';
+import EditServerModal from './EditServerModal';
+import MasterProtectedRoute from '../Auth/MasterProtectedRoute';
 
 const ServerManagement: React.FC = () => {
   const navigate = useNavigate();
   const [servers, setServers] = useState<Server[]>([]);
   const [loading, setLoading] = useState(true);
   const [showAddModal, setShowAddModal] = useState(false);
+  const [editServer, setEditServer] = useState<Server | null>(null);
   const [testingServer, setTestingServer] = useState<number | null>(null);
   const [testResults, setTestResults] = useState<Record<number, ConnectionTestResponse>>({});
   const [deletingServer, setDeletingServer] = useState<number | null>(null);
@@ -32,6 +35,11 @@ const ServerManagement: React.FC = () => {
 
   const handleServerAdded = () => {
     setShowAddModal(false);
+    loadServers();
+  };
+
+  const handleServerUpdated = () => {
+    setEditServer(null);
     loadServers();
   };
 
@@ -78,7 +86,8 @@ const ServerManagement: React.FC = () => {
   };
 
   return (
-    <div style={{ padding: '30px' }}>
+    <MasterProtectedRoute>
+      <div style={{ padding: '30px' }}>
       <div style={{ marginBottom: '30px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <div>
           <h1 style={{ marginBottom: '10px' }}>Server Management</h1>
@@ -157,6 +166,12 @@ const ServerManagement: React.FC = () => {
                             {testingServer === server.id ? 'Testing...' : 'Test'}
                           </button>
                           <button
+                            onClick={() => setEditServer(server)}
+                            className="btn btn-sm btn-secondary"
+                          >
+                            Edit
+                          </button>
+                          <button
                             onClick={() => handleDeleteClick(server)}
                             className="btn btn-sm btn-danger"
                             disabled={deletingServer === server.id}
@@ -178,6 +193,14 @@ const ServerManagement: React.FC = () => {
         <AddServerModal
           onClose={() => setShowAddModal(false)}
           onServerAdded={handleServerAdded}
+        />
+      )}
+
+      {editServer && (
+        <EditServerModal
+          server={editServer}
+          onClose={() => setEditServer(null)}
+          onServerUpdated={handleServerUpdated}
         />
       )}
 
@@ -236,6 +259,7 @@ const ServerManagement: React.FC = () => {
         </div>
       )}
     </div>
+    </MasterProtectedRoute>
   );
 };
 

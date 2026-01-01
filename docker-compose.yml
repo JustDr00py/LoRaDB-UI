@@ -12,6 +12,8 @@ services:
       - NODE_ENV=production
       - JWT_SECRET=${JWT_SECRET}
       - JWT_EXPIRATION_HOURS=${JWT_EXPIRATION_HOURS:-1}
+      - MASTER_PASSWORD=${MASTER_PASSWORD:-}
+      - MASTER_SESSION_HOURS=${MASTER_SESSION_HOURS:-24}
       - CORS_ORIGIN=${CORS_ORIGIN:-http://localhost:3000}
       - DATABASE_PATH=/app/data/servers.db
     volumes:
