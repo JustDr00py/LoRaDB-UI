@@ -27,6 +27,7 @@ export const Dashboard: React.FC = () => {
             <li><Link to="/devices" className={isActive('/devices')}>Devices</Link></li>
             <li><Link to="/query" className={isActive('/query')}>Query</Link></li>
             <li><Link to="/analytics" className={isActive('/analytics')}>Device Analytics</Link></li>
+            <li><Link to="/dashboard-widgets" className={isActive('/dashboard-widgets')}>Dashboard Widgets</Link></li>
             <li><Link to="/tokens" className={isActive('/tokens')}>API Tokens</Link></li>
             <li><Link to="/retention" className={isActive('/retention')}>Retention Policies</Link></li>
             <li><Link to="/servers/manage" className={isActive('/servers/manage')}>Manage Servers</Link></li>

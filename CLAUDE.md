@@ -227,3 +227,118 @@ When deploying to a server separate from LoRaDB:
 2. Add route in `App.tsx` if it's a page
 3. Use TanStack Query for server data fetching
 4. Use AuthContext's `useAuth()` hook for authentication state
+
+## Dashboard Widgets System
+
+The Dashboard Widgets feature allows users to create customizable, drag-and-drop dashboards for visualizing device measurements in real-time.
+
+### Overview
+
+- **Route**: `/dashboard-widgets`
+- **Location**: `frontend/src/components/Dashboard/`
+- **Device Types**: `device-types/` folder (mounted as Docker volume)
+- **Charts**: ECharts library for gauges and time series
+- **Grid**: react-grid-layout for drag/drop functionality
+- **Storage**: localStorage (dashboard layouts persisted per browser)
+
+### Widget Types
+
+1. **Current Value** - Large number display with color-coded thresholds
+2. **Time Series** - ECharts line chart with optional area fill
+3. **Gauge** - Radial gauge with colored zones
+4. **Status** - Color-coded status badge with conditions
+
+### Device Type Definitions
+
+Device types define how measurements are extracted and visualized. They are stored as JSON files in the `device-types/` folder, which is mounted as a Docker volume.
+
+**Auto-Discovery**: Device types are automatically loaded from `device-types/index.json`
+
+**Adding a new device type**:
+```bash
+# 1. Create JSON file in device-types/
+cp device-types/dragino-lht65.json device-types/my-sensor.json
+
+# 2. Edit to match your device payload structure
+nano device-types/my-sensor.json
+
+# 3. Update the index
+./update-device-types.sh
+
+# 4. Restart frontend
+docker compose restart frontend
+```
+
+**JSON Structure**:
+```json
+{
+  "deviceType": "unique-id",
+  "name": "Display Name",
+  "manufacturer": "Manufacturer",
+  "measurements": [
+    {
+      "id": "measurement_id",
+      "path": "decoded_payload.object.field",  // Dot notation
+      "name": "Display Name",
+      "unit": "°C",
+      "decimals": 1,
+      "defaultWidget": "time-series",
+      "widgets": {
+        "current-value": { "enabled": true, "thresholds": [...] },
+        "time-series": { "enabled": true, "color": "#2563eb" },
+        "gauge": { "enabled": true, "min": 0, "max": 100, "zones": [...] },
+        "status": { "enabled": true, "conditions": [...] }
+      }
+    }
+  ]
+}
+```
+
+### Key Components
+
+- `DashboardPage.tsx` - Main page with grid and controls
+- `DashboardGrid.tsx` - react-grid-layout wrapper
+- `WidgetContainer.tsx` - Individual widget wrapper with loading/error states
+- `WidgetConfigModal.tsx` - Add/edit widget modal
+- `TimeRangeControl.tsx` - Global time range and auto-refresh controls
+- `widgets/` - Individual widget type implementations
+
+### Hooks
+
+- `useDeviceTypes()` - Loads device type definitions from index.json
+- `useDashboardLayout()` - Manages dashboard state and localStorage persistence
+- `useWidgetData()` - Fetches and processes data for individual widgets using React Query
+
+### Data Flow
+
+1. Widget queries LoRaDB: `SELECT uplink FROM device 'DEV_EUI' WHERE LAST '24h'`
+2. Response frames processed by `widgetDataProcessor.ts`
+3. Measurement value extracted using `getNestedValue()` with dot notation path
+4. Data formatted and passed to appropriate widget component
+5. Widget renders using ECharts or custom components
+
+### Utilities
+
+- `widgetDataProcessor.ts` - Extracts measurement values from frames using dot notation
+- `dashboardStorage.ts` - localStorage helpers for dashboard persistence
+- Uses existing `queryParser.ts` `getNestedValue()` function for path extraction
+
+### Docker Volume Mount
+
+The `device-types/` folder is mounted as a read-only volume in docker-compose.yml:
+```yaml
+volumes:
+  - ./device-types:/usr/share/nginx/html/device-types:ro
+```
+
+This allows users to add/modify device types without rebuilding the Docker image.
+
+### Adding a New Widget Type
+
+To add a new widget type (e.g., "bar-chart"):
+1. Add type to `WidgetType` in `types/widgets.ts`
+2. Create widget config interface (e.g., `BarChartWidgetConfig`)
+3. Update `MeasurementDefinition` widgets object
+4. Create component in `components/Dashboard/widgets/BarChartWidget.tsx`
+5. Add case to `WidgetRenderer` in `WidgetContainer.tsx`
+6. Update device type JSON files to include new widget config

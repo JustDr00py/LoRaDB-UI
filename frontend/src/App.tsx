@@ -14,6 +14,7 @@ import { TokenManagement } from './components/Tokens/TokenManagement';
 import { RetentionPolicies } from './components/Retention/RetentionPolicies';
 import { Settings } from './components/Settings/Settings';
 import { DeviceKPI } from './components/Analytics/DeviceKPI';
+import { DashboardPage } from './components/Dashboard/DashboardPage';
 import './styles.css';
 
 const queryClient = new QueryClient({
@@ -61,6 +62,7 @@ function App() {
                   <Route path="tokens" element={<TokenManagement />} />
                   <Route path="retention" element={<RetentionPolicies />} />
                   <Route path="analytics" element={<DeviceKPI />} />
+                  <Route path="dashboard-widgets" element={<DashboardPage />} />
                   <Route path="settings" element={<Settings />} />
                 </Route>
                 <Route path="*" element={<Navigate to="/" replace />} />

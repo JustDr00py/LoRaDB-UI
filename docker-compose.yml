@@ -41,6 +41,8 @@ services:
         - VITE_API_URL=${VITE_API_URL:-http://localhost:3001}
     container_name: loradb-ui-frontend
     restart: unless-stopped
+    volumes:
+      - ./device-types:/usr/share/nginx/html/device-types:ro
     ports:
       - "${FRONTEND_PORT:-3000}:3000"
     depends_on:
