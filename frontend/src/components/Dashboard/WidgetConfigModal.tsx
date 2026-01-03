@@ -29,6 +29,7 @@ export const WidgetConfigModal: React.FC<WidgetConfigModalProps> = ({
   const [sectionOverrides, setSectionOverrides] = useState<{
     [measurementId: string]: { hidden?: boolean; displayTypes?: WidgetType[] };
   }>({});
+  const [sectionOrder, setSectionOrder] = useState<string[]>([]);
   const [conversionEnabled, setConversionEnabled] = useState(false);
   const [convertTo, setConvertTo] = useState<'fahrenheit' | 'kelvin'>('fahrenheit');
   const [customYAxisMin, setCustomYAxisMin] = useState<string>('');
@@ -53,6 +54,7 @@ export const WidgetConfigModal: React.FC<WidgetConfigModalProps> = ({
       setWidgetType('time-series');
       setTitle('');
       setSectionOverrides({});
+      setSectionOrder([]);
       setConversionEnabled(false);
       setConvertTo('fahrenheit');
       setCustomYAxisMin('');
@@ -67,6 +69,7 @@ export const WidgetConfigModal: React.FC<WidgetConfigModalProps> = ({
         setWidgetMode('template');
         setTemplateId(editWidget.templateId);
         setSectionOverrides(editWidget.sectionOverrides || {});
+        setSectionOrder(editWidget.sectionOrder || []);
       } else {
         setWidgetMode('individual');
         setMeasurementId(editWidget.measurementId || '');
@@ -102,6 +105,21 @@ export const WidgetConfigModal: React.FC<WidgetConfigModalProps> = ({
     }
   }, [deviceType, deviceTypes, editWidget]);
 
+  // Initialize section order when template is selected
+  useEffect(() => {
+    if (templateId && !editWidget) {
+      const dt = deviceTypes.find((d) => d.deviceType === deviceType);
+      const template = dt?.widgetTemplates?.find((t) => t.id === templateId);
+      if (template) {
+        // Extract measurement IDs from template sections in order
+        const measurementIds = template.sections.map((section) =>
+          Array.isArray(section.measurementId) ? section.measurementId[0] : section.measurementId
+        );
+        setSectionOrder(measurementIds);
+      }
+    }
+  }, [templateId, deviceType, deviceTypes, editWidget]);
+
   if (!isOpen) {
     return null;
   }
@@ -120,6 +138,21 @@ export const WidgetConfigModal: React.FC<WidgetConfigModalProps> = ({
         .filter(([_, config]) => config.enabled)
         .map(([type, _]) => type) as WidgetType[])
     : ['current-value', 'time-series', 'gauge', 'status'];
+
+  // Reorder section handlers
+  const moveSection = (measurementId: string, direction: 'up' | 'down') => {
+    const currentIndex = sectionOrder.indexOf(measurementId);
+    if (currentIndex === -1) return;
+
+    const newOrder = [...sectionOrder];
+    const targetIndex = direction === 'up' ? currentIndex - 1 : currentIndex + 1;
+
+    if (targetIndex < 0 || targetIndex >= newOrder.length) return;
+
+    // Swap positions
+    [newOrder[currentIndex], newOrder[targetIndex]] = [newOrder[targetIndex], newOrder[currentIndex]];
+    setSectionOrder(newOrder);
+  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -144,6 +177,7 @@ export const WidgetConfigModal: React.FC<WidgetConfigModalProps> = ({
         deviceType,
         templateId,
         sectionOverrides: Object.keys(sectionOverrides).length > 0 ? sectionOverrides : undefined,
+        sectionOrder: sectionOrder.length > 0 ? sectionOrder : undefined,
         title: title || undefined,
         conversion: conversionEnabled ? { enabled: true, convertTo } : undefined,
         customYAxisMin: customYAxisMin !== '' ? Number(customYAxisMin) : undefined,
@@ -285,24 +319,49 @@ export const WidgetConfigModal: React.FC<WidgetConfigModalProps> = ({
           )}
 
           {/* Template Customization */}
-          {deviceType && widgetMode === 'template' && selectedTemplate && (
+          {deviceType && widgetMode === 'template' && selectedTemplate && sectionOrder.length > 0 && (
             <div className="template-customization">
               <h4>Customize Template</h4>
-              {selectedTemplate.sections.map((section) => {
-                const measurementIds = Array.isArray(section.measurementId)
-                  ? section.measurementId
-                  : [section.measurementId];
+              {sectionOrder.map((mId, index) => {
+                const measurement = measurements.find((m) => m.id === mId);
+                if (!measurement) return null;
 
-                return measurementIds.map((mId) => {
-                  const measurement = measurements.find((m) => m.id === mId);
-                  if (!measurement) return null;
+                // Find the original section to get displayTypes
+                const originalSection = selectedTemplate.sections.find((s) => {
+                  const sectionMeasurementId = Array.isArray(s.measurementId)
+                    ? s.measurementId[0]
+                    : s.measurementId;
+                  return sectionMeasurementId === mId;
+                });
+                if (!originalSection) return null;
 
-                  const override = sectionOverrides[mId] || {};
-                  const displayTypes = override.displayTypes || section.displayTypes;
-                  const isHidden = override.hidden || false;
+                const override = sectionOverrides[mId] || {};
+                const displayTypes = override.displayTypes || originalSection.displayTypes;
+                const isHidden = override.hidden || false;
 
-                  return (
-                    <div key={mId} className="template-section-config">
+                return (
+                  <div key={mId} className="template-section-config">
+                    <div className="section-header">
+                      <div className="section-reorder-buttons">
+                        <button
+                          type="button"
+                          className="btn-icon"
+                          onClick={() => moveSection(mId, 'up')}
+                          disabled={index === 0}
+                          title="Move up"
+                        >
+                          ▲
+                        </button>
+                        <button
+                          type="button"
+                          className="btn-icon"
+                          onClick={() => moveSection(mId, 'down')}
+                          disabled={index === sectionOrder.length - 1}
+                          title="Move down"
+                        >
+                          ▼
+                        </button>
+                      </div>
                       <label className="checkbox-label">
                         <input
                           type="checkbox"
@@ -319,49 +378,49 @@ export const WidgetConfigModal: React.FC<WidgetConfigModalProps> = ({
                         />
                         <span>{measurement.name}</span>
                       </label>
-                      {!isHidden && (
-                        <div className="display-types">
-                          {(['current-value', 'time-series', 'gauge', 'status'] as WidgetType[]).map(
-                            (type) => {
-                              const config = measurement.widgets[type];
-                              if (!config?.enabled) return null;
-
-                              return (
-                                <label key={type} className="checkbox-label small">
-                                  <input
-                                    type="checkbox"
-                                    checked={displayTypes.includes(type)}
-                                    onChange={(e) => {
-                                      let newDisplayTypes: WidgetType[];
-                                      if (e.target.checked) {
-                                        newDisplayTypes = [...displayTypes, type];
-                                      } else {
-                                        newDisplayTypes = displayTypes.filter((t) => t !== type);
-                                      }
-                                      setSectionOverrides({
-                                        ...sectionOverrides,
-                                        [mId]: {
-                                          ...override,
-                                          displayTypes: newDisplayTypes,
-                                        },
-                                      });
-                                    }}
-                                  />
-                                  <span>
-                                    {type
-                                      .split('-')
-                                      .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
-                                      .join(' ')}
-                                  </span>
-                                </label>
-                              );
-                            }
-                          )}
-                        </div>
-                      )}
                     </div>
-                  );
-                });
+                    {!isHidden && (
+                      <div className="display-types">
+                        {(['current-value', 'time-series', 'gauge', 'status'] as WidgetType[]).map(
+                          (type) => {
+                            const config = measurement.widgets[type];
+                            if (!config?.enabled) return null;
+
+                            return (
+                              <label key={type} className="checkbox-label small">
+                                <input
+                                  type="checkbox"
+                                  checked={displayTypes.includes(type)}
+                                  onChange={(e) => {
+                                    let newDisplayTypes: WidgetType[];
+                                    if (e.target.checked) {
+                                      newDisplayTypes = [...displayTypes, type];
+                                    } else {
+                                      newDisplayTypes = displayTypes.filter((t) => t !== type);
+                                    }
+                                    setSectionOverrides({
+                                      ...sectionOverrides,
+                                      [mId]: {
+                                        ...override,
+                                        displayTypes: newDisplayTypes,
+                                      },
+                                    });
+                                  }}
+                                />
+                                <span>
+                                  {type
+                                    .split('-')
+                                    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+                                    .join(' ')}
+                                </span>
+                              </label>
+                            );
+                          }
+                        )}
+                      </div>
+                    )}
+                  </div>
+                );
               })}
             </div>
           )}

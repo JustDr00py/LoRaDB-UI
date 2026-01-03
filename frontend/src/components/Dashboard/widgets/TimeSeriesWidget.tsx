@@ -34,7 +34,7 @@ export const TimeSeriesWidget: React.FC<TimeSeriesWidgetProps> = ({
 
   if (widget.customYAxisMin !== undefined) {
     yAxisMin = widget.customYAxisMin;
-  } else if (widget.conversion?.enabled) {
+  } else if (widget.conversion?.enabled && measurement.unit === '°C') {
     const converted = getConvertedYAxisRange(config.yAxisMin, config.yAxisMax, widget.conversion);
     yAxisMin = converted.min;
     yAxisMax = converted.max;

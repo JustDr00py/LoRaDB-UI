@@ -42,8 +42,10 @@ export function processWidgetData(
     const value = extractMeasurementValue(frame, measurement.path);
 
     if (value !== null && frame.received_at) {
-      // Apply conversion if enabled
-      const convertedValue = convertTemperature(value, widget.conversion);
+      // Apply conversion if enabled and measurement is temperature
+      const convertedValue = measurement.unit === '°C'
+        ? convertTemperature(value, widget.conversion)
+        : value;
 
       timeSeries.push({
         timestamp: frame.received_at,

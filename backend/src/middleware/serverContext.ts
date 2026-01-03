@@ -29,8 +29,6 @@ export async function serverContextMiddleware(
   res: Response,
   next: NextFunction
 ): Promise<void> {
-  const isDev = config.nodeEnv === 'development';
-
   try {
     // Extract JWT token from Authorization header
     const authHeader = req.headers.authorization;
@@ -48,9 +46,6 @@ export async function serverContextMiddleware(
     let decoded: any;
     try {
       decoded = jwt.verify(token, config.jwtSecret);
-      if (isDev) {
-        console.log(`✅ JWT verified for server_id: ${decoded.server_id}`);
-      }
     } catch (error: any) {
       if (error.name === 'TokenExpiredError') {
         res.status(401).json({

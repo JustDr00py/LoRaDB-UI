@@ -158,10 +158,43 @@ export const CompositeDeviceWidget: React.FC<CompositeDeviceWidgetProps> = ({
     }
   };
 
+  // Apply custom section ordering if specified
+  const orderedSections = React.useMemo(() => {
+    if (!widget.sectionOrder || widget.sectionOrder.length === 0) {
+      return template.sections;
+    }
+
+    // Create a map of measurementId to section for quick lookup
+    const sectionMap = new Map<string, TemplateSection>();
+    template.sections.forEach((section) => {
+      const measurementId = Array.isArray(section.measurementId)
+        ? section.measurementId[0]
+        : section.measurementId;
+      sectionMap.set(measurementId, section);
+    });
+
+    // Build ordered array based on sectionOrder
+    const ordered: TemplateSection[] = [];
+    widget.sectionOrder.forEach((measurementId) => {
+      const section = sectionMap.get(measurementId);
+      if (section) {
+        ordered.push(section);
+        sectionMap.delete(measurementId);
+      }
+    });
+
+    // Append any sections not in the custom order (newly added measurements)
+    sectionMap.forEach((section) => {
+      ordered.push(section);
+    });
+
+    return ordered;
+  }, [template.sections, widget.sectionOrder]);
+
   return (
     <div className={`composite-widget composite-layout-${template.layout}`}>
       <div className="composite-body">
-        {template.sections.map((section, idx) => (
+        {orderedSections.map((section, idx) => (
           <React.Fragment key={idx}>{renderSection(section)}</React.Fragment>
         ))}
       </div>

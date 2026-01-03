@@ -21,15 +21,17 @@ export const GaugeWidget: React.FC<GaugeWidgetProps> = ({ data, measurement, con
 
   const displayUnit = data.unit || measurement.unit;
 
-  // Convert min/max if temperature conversion is enabled
-  const convertedRange = getConvertedYAxisRange(config.min, config.max, widget.conversion);
+  // Convert min/max if temperature conversion is enabled and measurement is temperature
+  const convertedRange = measurement.unit === '°C'
+    ? getConvertedYAxisRange(config.min, config.max, widget.conversion)
+    : { min: config.min, max: config.max };
   const gaugeMin = convertedRange.min ?? config.min;
   const gaugeMax = convertedRange.max ?? config.max;
 
   // Build color zones for axisLine - convert zone boundaries if needed
   const colorZones = config.zones
     ? config.zones.map((zone) => {
-        const convertedTo = widget.conversion?.enabled
+        const convertedTo = widget.conversion?.enabled && measurement.unit === '°C'
           ? getConvertedYAxisRange(zone.to, zone.to, widget.conversion).min ?? zone.to
           : zone.to;
         return [convertedTo / gaugeMax, zone.color] as [number, string];

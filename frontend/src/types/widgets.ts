@@ -143,6 +143,7 @@ export interface WidgetInstance {
       displayTypes?: WidgetType[]; // Override which visualizations to show
     };
   };
+  sectionOrder?: string[];        // Custom order of measurement IDs (optional)
 
   // Shared fields
   title?: string;                 // Optional custom title
