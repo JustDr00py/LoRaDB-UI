@@ -6,6 +6,7 @@ A web-based user interface for managing LoRaDB tokens and executing queries. Bui
 
 - **Server Management**: Multi-server configuration with encrypted credentials storage
 - **Master Password Protection**: Optional security layer for server management operations
+- **Backup & Restore**: Comprehensive backup system with automatic daily backups and migration support
 - **Token Management**: Generate JWT tokens with custom expiration times
 - **Device Management**: View all registered LoRaWAN devices with last activity
 - **Query Builder**: Visual query builder for LoRaDB's query DSL
@@ -377,6 +378,9 @@ npm run build
 | `JWT_EXPIRATION_HOURS` | Default token expiration | `1` | No |
 | `MASTER_PASSWORD` | Plaintext password for server management protection | - | No |
 | `MASTER_SESSION_HOURS` | Master session duration in hours | `24` | No |
+| `BACKUP_ENABLED` | Enable/disable automatic daily backups | `true` | No |
+| `BACKUP_SCHEDULE` | Cron schedule for automatic backups | `0 2 * * *` | No |
+| `BACKUP_RETENTION_DAYS` | Days to keep automatic backups | `7` | No |
 | `BACKEND_PORT` | Backend API port | `3001` | No |
 | `FRONTEND_PORT` | Frontend web server port | `3000` | No |
 | `CORS_ORIGIN` | Allowed frontend origin | `http://localhost:3000` | No |
@@ -513,6 +517,147 @@ Simply remove or comment out `MASTER_PASSWORD` from `.env` and restart:
 ```bash
 docker compose restart backend
 ```
+
+## Backup & Restore System
+
+The LoRaDB-UI includes a comprehensive backup and restore system for migrating data between instances or creating backups for disaster recovery.
+
+### What Gets Backed Up
+
+- **Server Configurations**: All server connections with encrypted API keys and password hashes
+- **Dashboard Layouts**: Custom dashboard widgets, layouts, and configurations
+- **User Settings**: Application preferences
+- **Device Types**: Custom device type definitions
+
+### Features
+
+- **Manual Backups**: Export system data anytime via the UI
+- **Automatic Backups**: Scheduled daily backups with automatic cleanup
+- **Import Strategies**: Merge (add new) or Replace (full restore)
+- **Security**: API keys remain encrypted in backups - you must remember server passwords
+
+### Setup
+
+Automatic backups are enabled by default. To customize, add to your `.env` file:
+
+```bash
+# Enable/disable automatic backups
+BACKUP_ENABLED=true
+
+# Cron schedule for automatic backups (default: 2 AM daily)
+# Format: minute hour day month weekday
+BACKUP_SCHEDULE=0 2 * * *
+
+# Number of days to keep automatic backups
+BACKUP_RETENTION_DAYS=7
+```
+
+Restart the backend to apply changes:
+```bash
+docker compose restart backend
+```
+
+### Creating Manual Backups
+
+1. Navigate to **Server Management** (`/servers/manage`)
+2. Scroll to **Backup & Restore** section
+3. Click **Export Backup**
+4. Save the downloaded JSON file in a secure location
+
+The backup file is plain JSON and can be inspected with any text editor.
+
+### Restoring from Backup
+
+1. Navigate to **Server Management** (`/servers/manage`)
+2. Click **Import Backup**
+3. Select your backup JSON file
+4. Choose an import strategy:
+   - **Merge**: Add servers from backup, skip duplicates (recommended)
+   - **Replace**: Delete all existing servers and restore from backup (⚠️ destructive)
+5. Review the preview and confirm
+
+### Import Strategies
+
+**Merge Strategy** (Recommended):
+- Adds new servers from the backup
+- Skips servers with duplicate names or hosts
+- Preserves existing servers
+- Conflict resolution: Duplicate names get timestamp suffix
+- Safe for regular imports
+
+**Replace Strategy**:
+- Deletes ALL existing servers
+- Imports servers from backup
+- ⚠️ Destructive operation - cannot be undone
+- Use only for full system restores
+
+### Automatic Backups
+
+Automatic backups:
+- Run daily at 2 AM by default (configurable via `BACKUP_SCHEDULE`)
+- Stored in Docker volume at `/app/data/backups/`
+- Automatically cleaned up after 7 days (configurable via `BACKUP_RETENTION_DAYS`)
+- Can be downloaded from the **Server Management** page
+
+To check automatic backup logs:
+```bash
+docker compose logs backend | grep backup
+```
+
+### Docker Volume Backup
+
+For complete disaster recovery, back up the entire Docker volume:
+
+```bash
+# Backup Docker volume to tar.gz file
+docker run --rm -v loradb-ui-data:/data -v $(pwd):/backup \
+  alpine tar czf /backup/loradb-data-backup.tar.gz /data
+
+# Restore Docker volume from tar.gz file
+docker run --rm -v loradb-ui-data:/data -v $(pwd):/backup \
+  alpine tar xzf /backup/loradb-data-backup.tar.gz -C /
+```
+
+### Security Considerations
+
+**Important**:
+- API keys remain **AES-256-GCM encrypted** in backups
+- Password hashes remain **bcrypt hashes**
+- **You MUST remember server passwords** to use restored servers
+- Backups do not contain plaintext passwords or API keys
+
+**Access Control**:
+- All backup operations require master password authentication
+- Rate limited to 10 operations per 15 minutes per IP
+- Backup files stored with 600 permissions (owner read/write only)
+
+**Best Practices**:
+1. Store backup files in a secure location
+2. Test the restore process periodically
+3. Keep backups encrypted at rest
+4. Never commit backup files to version control
+5. Document server passwords separately (they're not in backups)
+
+### Troubleshooting Backups
+
+**Automatic backups not running:**
+- Check `BACKUP_ENABLED=true` in `.env`
+- Verify `BACKUP_SCHEDULE` is valid cron syntax
+- Check logs: `docker compose logs backend | grep backup`
+
+**Import fails with "Version Error":**
+- Backup version incompatible with current version
+- Upgrade LoRaDB-UI to match backup version
+
+**"Host already exists" errors during merge:**
+- Security feature: duplicate hosts are skipped
+- Use replace strategy if intentional override needed
+- Or delete conflicting server before import
+
+**Restored servers don't work:**
+- API keys are encrypted with original server passwords
+- You must remember the original passwords to use restored servers
+- Re-add server with correct credentials if password forgotten
 
 ## Backup & Maintenance
 

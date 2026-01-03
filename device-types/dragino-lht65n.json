@@ -222,5 +222,101 @@
         }
       }
     }
+  ],
+  "widgetTemplates": [
+    {
+      "id": "overview",
+      "name": "Temperature & Humidity Overview",
+      "description": "Current values with trend charts for temperature and humidity",
+      "layout": "grid",
+      "defaultSize": { "w": 8, "h": 6 },
+      "sections": [
+        {
+          "measurementId": "temp_sht",
+          "displayTypes": ["current-value", "time-series"]
+        },
+        {
+          "measurementId": "humidity",
+          "displayTypes": ["current-value", "time-series"]
+        },
+        {
+          "measurementId": "battery_voltage",
+          "displayTypes": ["current-value"]
+        }
+      ]
+    },
+    {
+      "id": "dual-temp",
+      "name": "Dual Temperature Sensors",
+      "description": "Compare internal and external temperature sensors",
+      "layout": "vertical",
+      "defaultSize": { "w": 6, "h": 6 },
+      "sections": [
+        {
+          "measurementId": "temp_sht",
+          "displayTypes": ["current-value", "time-series"]
+        },
+        {
+          "measurementId": "temp_ds",
+          "displayTypes": ["current-value", "time-series"]
+        }
+      ]
+    },
+    {
+      "id": "compact",
+      "name": "Compact View",
+      "description": "Current values only for all measurements",
+      "layout": "vertical",
+      "defaultSize": { "w": 3, "h": 4 },
+      "sections": [
+        {
+          "measurementId": "temp_sht",
+          "displayTypes": ["current-value"]
+        },
+        {
+          "measurementId": "humidity",
+          "displayTypes": ["current-value"]
+        },
+        {
+          "measurementId": "battery_voltage",
+          "displayTypes": ["current-value"]
+        }
+      ]
+    },
+    {
+      "id": "gauges",
+      "name": "Gauge View",
+      "description": "Circular gauges for temperature and humidity",
+      "layout": "horizontal",
+      "defaultSize": { "w": 8, "h": 4 },
+      "sections": [
+        {
+          "measurementId": "temp_sht",
+          "displayTypes": ["gauge"]
+        },
+        {
+          "measurementId": "humidity",
+          "displayTypes": ["gauge"]
+        }
+      ]
+    },
+    {
+      "id": "combined-trends",
+      "name": "Combined Temperature & Humidity Trends",
+      "description": "Temperature and humidity on a single chart with dual Y-axes",
+      "layout": "vertical",
+      "defaultSize": { "w": 8, "h": 5 },
+      "sections": [
+        {
+          "measurementId": ["temp_sht", "humidity"],
+          "displayTypes": ["time-series"],
+          "combinedChart": true,
+          "chartConfig": {
+            "title": "Temperature & Humidity Over Time",
+            "measurementIds": ["temp_sht", "humidity"]
+          }
+        }
+      ]
+    }
   ]
 }

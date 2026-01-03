@@ -30,14 +30,17 @@ export function useDashboardLayout() {
         : 0;
 
       // Default widget size based on type
-      const defaultSize = {
+      const defaultSizeByType: Record<string, { w: number; h: number }> = {
         'current-value': { w: 3, h: 2 },
         'status': { w: 3, h: 2 },
         'gauge': { w: 4, h: 4 },
         'time-series': { w: 6, h: 4 },
       };
 
-      const size = defaultSize[widget.widgetType] || { w: 4, h: 4 };
+      // Determine size: use template default size for composite widgets, or widget type size for legacy widgets
+      const size = widget.widgetType
+        ? (defaultSizeByType[widget.widgetType] || { w: 4, h: 4 })
+        : { w: 8, h: 6 }; // Default size for composite widgets (templates may vary)
 
       return {
         ...prev,

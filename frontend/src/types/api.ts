@@ -284,3 +284,65 @@ export interface TimeSeriesDataPoint {
   gatewayCount?: number;
   frequency?: number;  // Frequency in MHz
 }
+
+// Backup & Restore
+export interface BackupData {
+  version: string;
+  timestamp: string;
+  metadata: {
+    type: 'full' | 'partial';
+    source: 'manual' | 'automatic';
+  };
+  data: {
+    servers: BackupServerData[];
+    deviceTypes: DeviceTypeBackup[];
+  };
+}
+
+export interface BackupServerData {
+  name: string;
+  host: string;
+  api_key: string;
+  api_key_iv: string;
+  api_key_auth_tag: string;
+  api_key_salt: string;
+  password_hash: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface DeviceTypeBackup {
+  filename: string;
+  content: any;
+}
+
+export interface ImportResult {
+  servers: {
+    imported: number;
+    skipped: number;
+    errors: string[];
+  };
+  deviceTypes: {
+    imported: number;
+    skipped: number;
+    errors: string[];
+  };
+}
+
+export interface BackupFile {
+  filename: string;
+  timestamp: string;
+  size: number;
+}
+
+export type ImportStrategy = 'merge' | 'replace';
+
+export interface ExportBackupRequest {
+  includeDeviceTypes?: boolean;
+  saveAutomatic?: boolean;
+}
+
+export interface ImportBackupRequest {
+  backup: BackupData;
+  strategy: ImportStrategy;
+}

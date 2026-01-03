@@ -4,6 +4,7 @@ import { listServers, deleteServer, testServerConnection } from '../../api/endpo
 import { Server, ConnectionTestResponse } from '../../types/api';
 import AddServerModal from './AddServerModal';
 import EditServerModal from './EditServerModal';
+import BackupManagement from './BackupManagement';
 import MasterProtectedRoute from '../Auth/MasterProtectedRoute';
 
 const ServerManagement: React.FC = () => {
@@ -188,6 +189,9 @@ const ServerManagement: React.FC = () => {
           </div>
         </div>
       )}
+
+      {/* Backup & Restore Section */}
+      <BackupManagement />
 
       {showAddModal && (
         <AddServerModal

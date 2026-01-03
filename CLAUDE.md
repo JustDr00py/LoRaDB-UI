@@ -342,3 +342,176 @@ To add a new widget type (e.g., "bar-chart"):
 4. Create component in `components/Dashboard/widgets/BarChartWidget.tsx`
 5. Add case to `WidgetRenderer` in `WidgetContainer.tsx`
 6. Update device type JSON files to include new widget config
+
+## Backup & Restore System
+
+The backup system provides comprehensive backup and migration capabilities for all LoRaDB-UI data, including server configurations, dashboard layouts, user settings, and device type definitions.
+
+### Overview
+
+**Features**:
+- Manual on-demand backups via Server Management page
+- Automatic daily backups at 2 AM (configurable)
+- Import with merge or replace strategies
+- Automatic cleanup of old backups (7-day retention by default)
+
+**What's Backed Up**:
+- Server configurations (name, host, encrypted API keys, password hashes)
+- Dashboard layouts and widgets
+- User settings
+- Device type definitions
+
+### Backup Format
+
+Backups are stored as plain JSON files with the following structure:
+
+```json
+{
+  "version": "1.0.0",
+  "timestamp": "2026-01-03T12:00:00Z",
+  "metadata": {
+    "type": "full",
+    "source": "manual" | "automatic"
+  },
+  "data": {
+    "servers": [...],
+    "deviceTypes": [...],
+    "dashboards": {...},
+    "settings": {...}
+  }
+}
+```
+
+### Environment Configuration
+
+Add to `.env` file (optional - defaults shown):
+
+```bash
+BACKUP_ENABLED=true                 # Enable/disable automatic backups
+BACKUP_SCHEDULE="0 2 * * *"         # Cron schedule (default: 2 AM daily)
+BACKUP_RETENTION_DAYS=7             # Days to keep automatic backups
+```
+
+Restart backend to apply changes:
+```bash
+docker compose restart backend
+```
+
+### Usage
+
+#### Manual Backup
+
+1. Navigate to Server Management page (`/servers/manage`)
+2. Scroll to "Backup & Restore" section
+3. Click "Export Backup" to download current state as JSON file
+4. Save the file in a secure location
+
+#### Import Backup
+
+1. Navigate to Server Management page (`/servers/manage`)
+2. Click "Import Backup"
+3. Select backup JSON file
+4. Choose import strategy:
+   - **Merge**: Add servers from backup, skip duplicates (recommended)
+   - **Replace**: Delete all existing servers, restore from backup (⚠️ destructive)
+5. Review preview and confirm
+
+#### Automatic Backups
+
+- Run daily at 2 AM (configurable via `BACKUP_SCHEDULE`)
+- Stored in Docker volume at `/app/data/backups/`
+- Old backups automatically deleted after 7 days (configurable via `BACKUP_RETENTION_DAYS`)
+- Available for download in Server Management page
+
+### Import Strategies
+
+**Merge Strategy** (Recommended):
+- Adds new servers from backup
+- Skips servers with duplicate names or hosts
+- Preserves existing servers
+- Conflict resolution: Duplicate names get timestamp suffix
+- Safe for regular imports
+
+**Replace Strategy**:
+- Deletes ALL existing servers
+- Imports servers from backup
+- ⚠️ Destructive operation - cannot be undone
+- Use only for full system restores
+
+### Security & Important Notes
+
+**API Key Encryption**:
+- API keys remain AES-256-GCM encrypted in backups
+- Password hashes remain bcrypt hashes
+- **You MUST remember server passwords to use restored servers**
+- Backups do not contain plaintext passwords or API keys
+
+**Access Control**:
+- All backup operations require master password authentication
+- Rate limited: 10 operations per 15 minutes per IP
+- Backup files stored with 600 permissions (owner read/write only)
+
+**Best Practices**:
+1. Store backup files in secure location
+2. Test restore process periodically
+3. Keep backups encrypted at rest
+4. Never commit backup files to version control
+5. Document server passwords separately (not in backups)
+
+### Architecture
+
+**Backend** (`backend/src/`):
+- `db/repositories/backupRepository.ts` - Backup/restore database operations
+- `routes/backup.ts` - API endpoints for backup operations
+- `utils/backupScheduler.ts` - Automatic backup scheduler using node-cron
+- `utils/deviceTypeLoader.ts` - Device type file operations
+- `types/backup.ts` - TypeScript interfaces
+
+**Frontend** (`frontend/src/`):
+- `components/Servers/BackupManagement.tsx` - Backup UI component
+- `utils/backupUtils.ts` - Client-side backup utilities
+- `api/endpoints.ts` - Backup API functions
+
+**API Endpoints**:
+```
+POST   /api/backup/export           - Export system backup
+POST   /api/backup/import           - Import system backup
+GET    /api/backup/list             - List automatic backups
+GET    /api/backup/download/:file   - Download automatic backup
+DELETE /api/backup/:file            - Delete automatic backup
+```
+
+### Docker Volume Backup
+
+For complete disaster recovery, back up the Docker volume containing the database and backups:
+
+```bash
+# Backup entire Docker volume
+docker run --rm -v loradb-ui-data:/data -v $(pwd):/backup \
+  alpine tar czf /backup/loradb-data-backup.tar.gz /data
+
+# Restore Docker volume
+docker run --rm -v loradb-ui-data:/data -v $(pwd):/backup \
+  alpine tar xzf /backup/loradb-data-backup.tar.gz -C /
+```
+
+### Troubleshooting
+
+**Automatic backups not running**:
+- Check `BACKUP_ENABLED=true` in environment
+- Verify `BACKUP_SCHEDULE` is valid cron syntax
+- Check backend logs: `docker compose logs backend | grep backup`
+
+**Import fails with "Version Error"**:
+- Backup version incompatible with current version
+- Upgrade LoRaDB-UI to match backup version
+
+**"Host already exists" errors during merge**:
+- Security feature: duplicate hosts skipped to prevent conflicts
+- Use replace strategy if intentional override needed
+- Or delete conflicting server before import
+
+**Restored servers don't work**:
+- API keys are encrypted with original server passwords
+- You must remember original passwords to use restored servers
+- Re-add server with correct credentials if password forgotten

@@ -26,7 +26,7 @@ export const DashboardPage: React.FC = () => {
     layout,
   } = useDashboardLayout();
 
-  const { deviceTypes, loading: deviceTypesLoading, getMeasurement } = useDeviceTypes();
+  const { deviceTypes, loading: deviceTypesLoading, getMeasurement, getDeviceType } = useDeviceTypes();
 
   const [configModalOpen, setConfigModalOpen] = useState(false);
   const [editingWidget, setEditingWidget] = useState<WidgetInstance | undefined>(undefined);
@@ -150,6 +150,7 @@ export const DashboardPage: React.FC = () => {
           onDeleteWidget={deleteWidget}
           onEditWidget={handleEditWidget}
           getMeasurement={getMeasurement}
+          getDeviceType={getDeviceType}
         />
       )}
 

@@ -132,5 +132,70 @@
         }
       }
     }
+  ],
+  "widgetTemplates": [
+    {
+      "id": "overview",
+      "name": "Sensor Overview",
+      "description": "All measurements with current values and charts",
+      "layout": "grid",
+      "defaultSize": { "w": 8, "h": 6 },
+      "sections": [
+        {
+          "measurementId": "temperature",
+          "displayTypes": ["current-value", "time-series"]
+        },
+        {
+          "measurementId": "humidity",
+          "displayTypes": ["current-value", "time-series"]
+        },
+        {
+          "measurementId": "battery",
+          "displayTypes": ["current-value"]
+        }
+      ]
+    },
+    {
+      "id": "gauges",
+      "name": "Gauge View",
+      "description": "Visual gauges for all measurements",
+      "layout": "horizontal",
+      "defaultSize": { "w": 8, "h": 4 },
+      "sections": [
+        {
+          "measurementId": "temperature",
+          "displayTypes": ["gauge"]
+        },
+        {
+          "measurementId": "humidity",
+          "displayTypes": ["gauge"]
+        },
+        {
+          "measurementId": "battery",
+          "displayTypes": ["gauge"]
+        }
+      ]
+    },
+    {
+      "id": "compact",
+      "name": "Compact View",
+      "description": "Current values only",
+      "layout": "vertical",
+      "defaultSize": { "w": 3, "h": 4 },
+      "sections": [
+        {
+          "measurementId": "temperature",
+          "displayTypes": ["current-value"]
+        },
+        {
+          "measurementId": "humidity",
+          "displayTypes": ["current-value"]
+        },
+        {
+          "measurementId": "battery",
+          "displayTypes": ["current-value"]
+        }
+      ]
+    }
   ]
 }

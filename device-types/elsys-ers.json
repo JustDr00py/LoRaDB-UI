@@ -160,5 +160,87 @@
         }
       }
     }
+  ],
+  "widgetTemplates": [
+    {
+      "id": "environmental",
+      "name": "Environmental Overview",
+      "description": "Temperature, humidity, and light conditions",
+      "layout": "grid",
+      "defaultSize": { "w": 8, "h": 6 },
+      "sections": [
+        {
+          "measurementId": "temperature",
+          "displayTypes": ["current-value", "time-series"]
+        },
+        {
+          "measurementId": "humidity",
+          "displayTypes": ["current-value", "time-series"]
+        },
+        {
+          "measurementId": "light",
+          "displayTypes": ["current-value", "time-series"]
+        }
+      ]
+    },
+    {
+      "id": "climate",
+      "name": "Climate Monitor",
+      "description": "Temperature and humidity gauges",
+      "layout": "horizontal",
+      "defaultSize": { "w": 6, "h": 4 },
+      "sections": [
+        {
+          "measurementId": "temperature",
+          "displayTypes": ["gauge"]
+        },
+        {
+          "measurementId": "humidity",
+          "displayTypes": ["gauge"]
+        }
+      ]
+    },
+    {
+      "id": "security",
+      "name": "Security Monitor",
+      "description": "Motion detection and light levels",
+      "layout": "vertical",
+      "defaultSize": { "w": 5, "h": 5 },
+      "sections": [
+        {
+          "measurementId": "motion",
+          "displayTypes": ["status", "time-series"]
+        },
+        {
+          "measurementId": "light",
+          "displayTypes": ["current-value", "time-series"]
+        }
+      ]
+    },
+    {
+      "id": "compact",
+      "name": "Compact View",
+      "description": "Current values for all sensors",
+      "layout": "vertical",
+      "defaultSize": { "w": 3, "h": 5 },
+      "sections": [
+        {
+          "measurementId": "temperature",
+          "displayTypes": ["current-value"]
+        },
+        {
+          "measurementId": "humidity",
+          "displayTypes": ["current-value"]
+        },
+        {
+          "measurementId": "light",
+          "displayTypes": ["current-value"]
+        },
+        {
+          "measurementId": "motion",
+          "displayTypes": ["status"]
+        }
+      ]
+    }
   ]
 }

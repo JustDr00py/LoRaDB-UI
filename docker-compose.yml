@@ -16,6 +16,9 @@ services:
       - MASTER_SESSION_HOURS=${MASTER_SESSION_HOURS:-24}
       - CORS_ORIGIN=${CORS_ORIGIN:-http://localhost:3000}
       - DATABASE_PATH=/app/data/servers.db
+      - BACKUP_ENABLED=${BACKUP_ENABLED:-true}
+      - BACKUP_SCHEDULE=${BACKUP_SCHEDULE:-0 2 * * *}
+      - BACKUP_RETENTION_DAYS=${BACKUP_RETENTION_DAYS:-7}
     volumes:
       - loradb-ui-data:/app/data
     ports:

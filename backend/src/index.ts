@@ -7,9 +7,13 @@ import { generalLimiter } from './middleware/rateLimiter';
 import authRoutes from './routes/auth';
 import serverRoutes from './routes/servers';
 import proxyRoutes from './routes/proxy';
+import backupRoutes from './routes/backup';
 
 // Initialize database (schema creation happens on import)
 import './db/database';
+
+// Import backup scheduler
+import { startBackupScheduler } from './utils/backupScheduler';
 
 const app = express();
 
@@ -34,6 +38,7 @@ app.get('/', (_req, res) => {
 
 app.use('/api/auth', authRoutes);
 app.use('/api/servers', serverRoutes);
+app.use('/api/backup', backupRoutes);
 app.use('/api', proxyRoutes);
 
 // Error handlers (must be last)
@@ -56,12 +61,21 @@ app.listen(config.port, () => {
   console.log(`   POST /api/servers/:id/authenticate - Authenticate to server`);
   console.log(`   POST /api/servers/:id/test-connection - Test server connection`);
   console.log(`   DELETE /api/servers/:id         - Delete server`);
+  console.log(`\n   Backup & Restore:`);
+  console.log(`   POST /api/backup/export         - Export system backup`);
+  console.log(`   POST /api/backup/import         - Import system backup`);
+  console.log(`   GET  /api/backup/list           - List automatic backups`);
+  console.log(`   GET  /api/backup/download/:file - Download automatic backup`);
+  console.log(`   DELETE /api/backup/:file        - Delete automatic backup`);
   console.log(`\n   LoRaDB Proxy (requires authentication):`);
   console.log(`   GET  /api/health                - LoRaDB health check`);
   console.log(`   POST /api/query                 - Execute query`);
   console.log(`   GET  /api/devices               - List devices`);
   console.log(`   GET  /api/devices/:dev_eui      - Get device info`);
   console.log(`   (+ tokens, retention policies...)\n`);
+
+  // Start backup scheduler
+  startBackupScheduler();
 });
 
 // Graceful shutdown

@@ -2,7 +2,7 @@ import React from 'react';
 import GridLayout, { Layout } from 'react-grid-layout';
 import 'react-grid-layout/css/styles.css';
 import 'react-resizable/css/styles.css';
-import type { WidgetInstance, MeasurementDefinition } from '../../types/widgets';
+import type { WidgetInstance, MeasurementDefinition, DeviceTypeDefinition } from '../../types/widgets';
 import { WidgetContainer } from './WidgetContainer';
 
 interface DashboardGridProps {
@@ -14,6 +14,7 @@ interface DashboardGridProps {
   onDeleteWidget: (id: string) => void;
   onEditWidget: (widget: WidgetInstance) => void;
   getMeasurement: (deviceType: string, measurementId: string) => MeasurementDefinition | undefined;
+  getDeviceType: (deviceType: string) => DeviceTypeDefinition | undefined;
 }
 
 export const DashboardGrid: React.FC<DashboardGridProps> = ({
@@ -25,6 +26,7 @@ export const DashboardGrid: React.FC<DashboardGridProps> = ({
   onDeleteWidget,
   onEditWidget,
   getMeasurement,
+  getDeviceType,
 }) => {
   return (
     <GridLayout
@@ -41,8 +43,12 @@ export const DashboardGrid: React.FC<DashboardGridProps> = ({
       preventCollision={false}
     >
       {widgets.map((widget) => {
-        const measurement = widget.deviceType
+        const measurement = widget.deviceType && widget.measurementId
           ? getMeasurement(widget.deviceType, widget.measurementId)
+          : undefined;
+
+        const deviceType = widget.deviceType
+          ? getDeviceType(widget.deviceType)
           : undefined;
 
         return (
@@ -50,6 +56,7 @@ export const DashboardGrid: React.FC<DashboardGridProps> = ({
             <WidgetContainer
               widget={widget}
               measurement={measurement}
+              deviceType={deviceType}
               timeRange={timeRange}
               refreshInterval={refreshInterval}
               onDelete={() => onDeleteWidget(widget.id)}

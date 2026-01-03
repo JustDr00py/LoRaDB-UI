@@ -1,14 +1,17 @@
 import React from 'react';
-import type { WidgetInstance, MeasurementDefinition } from '../../types/widgets';
+import type { WidgetInstance, MeasurementDefinition, DeviceTypeDefinition } from '../../types/widgets';
 import { useWidgetData } from '../../hooks/useWidgetData';
+import { useCompositeWidgetData } from '../../hooks/useCompositeWidgetData';
 import { CurrentValueWidget } from './widgets/CurrentValueWidget';
 import { TimeSeriesWidget } from './widgets/TimeSeriesWidget';
 import { GaugeWidget } from './widgets/GaugeWidget';
 import { StatusWidget } from './widgets/StatusWidget';
+import { CompositeDeviceWidget } from './widgets/CompositeDeviceWidget';
 
 interface WidgetContainerProps {
   widget: WidgetInstance;
   measurement: MeasurementDefinition | undefined;
+  deviceType?: DeviceTypeDefinition;
   timeRange: string;
   refreshInterval?: number;
   onDelete: () => void;
@@ -18,14 +21,39 @@ interface WidgetContainerProps {
 export const WidgetContainer: React.FC<WidgetContainerProps> = ({
   widget,
   measurement,
+  deviceType,
   timeRange,
   refreshInterval,
   onDelete,
   onEdit,
 }) => {
-  const { data, isLoading, error } = useWidgetData(widget, measurement, timeRange, refreshInterval);
+  // Determine if this is a composite widget or legacy widget
+  const isComposite = !!widget.templateId && !!deviceType;
+  const template = deviceType?.widgetTemplates?.find((t) => t.id === widget.templateId);
 
-  const title = widget.title || measurement?.name || 'Widget';
+  // Fetch data based on widget type
+  const legacyResult = useWidgetData(
+    widget,
+    measurement,
+    timeRange,
+    isComposite ? undefined : refreshInterval
+  );
+
+  const compositeResult = useCompositeWidgetData(
+    widget,
+    template,
+    deviceType,
+    timeRange,
+    isComposite ? refreshInterval : undefined
+  );
+
+  // Extract data, loading, error based on widget type
+  const data = isComposite ? compositeResult.measurementData : legacyResult.data;
+  const isLoading = isComposite ? compositeResult.isLoading : legacyResult.isLoading;
+  const error = isComposite ? compositeResult.error : legacyResult.error;
+
+  // Determine title
+  const title = widget.title || (isComposite ? template?.name : measurement?.name) || 'Widget';
 
   return (
     <div className="widget-container">
@@ -55,8 +83,21 @@ export const WidgetContainer: React.FC<WidgetContainerProps> = ({
           </div>
         )}
 
-        {!isLoading && !error && data && measurement && (
-          <WidgetRenderer widget={widget} data={data} measurement={measurement} />
+        {!isLoading && !error && data && (
+          <>
+            {isComposite && template && deviceType && Array.isArray(data) ? (
+              <CompositeDeviceWidget
+                widget={widget}
+                deviceType={deviceType}
+                template={template}
+                measurementData={data}
+              />
+            ) : (
+              measurement && !Array.isArray(data) && (
+                <WidgetRenderer widget={widget} data={data} measurement={measurement} />
+              )
+            )}
+          </>
         )}
 
         {!isLoading && !error && !data && (

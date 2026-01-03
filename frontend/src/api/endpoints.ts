@@ -23,6 +23,10 @@ import type {
   ConnectionTestResponse,
   MasterSessionResponse,
   MasterPasswordStatusResponse,
+  BackupData,
+  BackupFile,
+  ImportResult,
+  ImportStrategy,
 } from '../types/api';
 
 // Server Management
@@ -187,4 +191,41 @@ export const deleteApplicationRetentionPolicy = async (applicationId: string): P
 export const enforceRetention = async (): Promise<RetentionEnforceResponse> => {
   const response = await apiClient.post<RetentionEnforceResponse>('/api/retention/enforce', {});
   return response.data;
+};
+
+// Backup & Restore
+export const exportBackup = async (
+  includeDeviceTypes: boolean = true,
+  saveAutomatic: boolean = false
+): Promise<BackupData> => {
+  const response = await apiClient.post<BackupData>('/api/backup/export', {
+    includeDeviceTypes,
+    saveAutomatic,
+  });
+  return response.data;
+};
+
+export const importBackup = async (
+  backup: BackupData,
+  strategy: ImportStrategy
+): Promise<ImportResult> => {
+  const response = await apiClient.post<ImportResult>('/api/backup/import', {
+    backup,
+    strategy,
+  });
+  return response.data;
+};
+
+export const listAutomaticBackups = async (): Promise<BackupFile[]> => {
+  const response = await apiClient.get<BackupFile[]>('/api/backup/list');
+  return response.data;
+};
+
+export const downloadAutomaticBackup = async (filename: string): Promise<BackupData> => {
+  const response = await apiClient.get<BackupData>(`/api/backup/download/${filename}`);
+  return response.data;
+};
+
+export const deleteAutomaticBackup = async (filename: string): Promise<void> => {
+  await apiClient.delete(`/api/backup/${filename}`);
 };

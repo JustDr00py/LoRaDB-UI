@@ -79,6 +79,34 @@ export interface MeasurementDefinition {
   };
 }
 
+// Widget Template Section - defines how a measurement is displayed in a composite widget
+export interface TemplateSection {
+  measurementId: string | string[];  // Single ID or array for combined charts
+  displayTypes: WidgetType[];        // Which visualizations to show (can be multiple!)
+  combinedChart?: boolean;           // If true, combine multiple measurements in one chart
+  chartConfig?: {
+    title?: string;
+    measurementIds?: string[];       // For combined charts
+  };
+  layout?: {
+    [key in WidgetType]?: {
+      position?: 'top-left' | 'top-right' | 'bottom-left' | 'bottom-right' | 'top' | 'bottom';
+      size?: 'small' | 'medium' | 'large';
+    };
+  };
+  hidden?: boolean;
+}
+
+// Widget Template - defines how to display multiple measurements for a device type
+export interface WidgetTemplate {
+  id: string;
+  name: string;
+  description?: string;
+  layout: 'grid' | 'vertical' | 'horizontal';
+  defaultSize: { w: number; h: number };
+  sections: TemplateSection[];
+}
+
 // Device type definition (loaded from JSON files)
 export interface DeviceTypeDefinition {
   deviceType: string;
@@ -87,6 +115,7 @@ export interface DeviceTypeDefinition {
   description: string;
   version: string;
   measurements: MeasurementDefinition[];
+  widgetTemplates?: WidgetTemplate[];  // NEW: Templates for composite widgets
 }
 
 // Conversion settings for measurements
@@ -96,12 +125,26 @@ export interface ConversionSettings {
 }
 
 // Widget instance - what gets saved in dashboard layout
+// Supports both legacy (single measurement) and composite (template-based) widgets
 export interface WidgetInstance {
   id: string;                     // Unique widget ID (UUID)
   devEui: string;                 // Device to query
   deviceType?: string;            // Optional device type for auto-config
-  measurementId: string;          // Which measurement to display
-  widgetType: WidgetType;         // Widget visualization type
+
+  // Legacy single-measurement widget fields
+  measurementId?: string;         // Which measurement to display (legacy)
+  widgetType?: WidgetType;        // Widget visualization type (legacy)
+
+  // New composite widget fields
+  templateId?: string;            // Which template to use (new)
+  sectionOverrides?: {            // Customize template per instance (new)
+    [measurementId: string]: {
+      hidden?: boolean;           // Hide this measurement
+      displayTypes?: WidgetType[]; // Override which visualizations to show
+    };
+  };
+
+  // Shared fields
   title?: string;                 // Optional custom title
   config?: Partial<MeasurementDefinition>; // Override measurement config
   conversion?: ConversionSettings; // Unit conversion settings

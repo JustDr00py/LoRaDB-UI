@@ -721,6 +721,195 @@ pre {
   color: var(--text-primary);
 }
 
+/* ==================== Composite Widget Styles ==================== */
+
+/* Composite Widget Container */
+.composite-widget {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  width: 100%;
+}
+
+.composite-body {
+  flex: 1;
+  display: flex;
+  padding: 16px;
+  overflow: auto;
+  gap: 16px;
+}
+
+/* Layout Types */
+.composite-layout-grid .composite-body {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 16px;
+}
+
+.composite-layout-vertical .composite-body {
+  flex-direction: column;
+  gap: 12px;
+}
+
+.composite-layout-horizontal .composite-body {
+  flex-direction: row;
+  gap: 16px;
+}
+
+/* Section Styles */
+.composite-section {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  background: var(--bg-secondary, #f9fafb);
+  border-radius: 6px;
+  padding: 12px;
+  border: 1px solid var(--border-color, #e5e7eb);
+}
+
+.composite-section-label {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--text-secondary, #6b7280);
+  margin-bottom: 4px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.composite-section-widgets {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+/* Widget Item Sizes */
+.composite-widget-item {
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.composite-widget-item.widget-small .current-value-widget .value {
+  font-size: 1.25rem;
+}
+
+.composite-widget-item.widget-small .time-series-widget {
+  height: 120px;
+}
+
+.composite-widget-item.widget-medium .current-value-widget .value {
+  font-size: 1.5rem;
+}
+
+.composite-widget-item.widget-medium .time-series-widget {
+  height: 180px;
+}
+
+.composite-widget-item.widget-large .current-value-widget .value {
+  font-size: 2rem;
+}
+
+.composite-widget-item.widget-large .time-series-widget {
+  height: 250px;
+}
+
+/* Template Customization UI (in Modal) */
+.template-customization {
+  margin-top: 16px;
+  padding: 16px;
+  background: var(--bg-secondary, #f9fafb);
+  border-radius: 8px;
+  border: 1px solid var(--border-color, #e5e7eb);
+}
+
+.template-customization h4 {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-bottom: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.template-section-config {
+  margin-bottom: 12px;
+  padding: 12px;
+  background: white;
+  border-radius: 6px;
+  border: 1px solid var(--border-color, #e5e7eb);
+}
+
+.display-types {
+  margin-left: 24px;
+  margin-top: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+/* Radio Group Styles */
+.radio-group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.radio-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.radio-label:hover {
+  background-color: var(--bg-secondary, #f9fafb);
+}
+
+.radio-label input[type="radio"] {
+  cursor: pointer;
+}
+
+.radio-label span {
+  font-size: 0.875rem;
+  color: var(--text-primary);
+}
+
+/* Checkbox Label Styles */
+.checkbox-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  user-select: none;
+}
+
+.checkbox-label input[type="checkbox"] {
+  cursor: pointer;
+  width: 16px;
+  height: 16px;
+}
+
+.checkbox-label.small {
+  font-size: 0.8125rem;
+  color: var(--text-secondary, #6b7280);
+}
+
+.checkbox-label.small input[type="checkbox"] {
+  width: 14px;
+  height: 14px;
+}
+
+/* Help Text */
+.help-text {
+  font-size: 0.8125rem;
+  color: var(--text-secondary, #6b7280);
+  margin-top: 4px;
+  line-height: 1.4;
+}
+
 /* Empty State */
 .empty-state {
   text-align: center;
