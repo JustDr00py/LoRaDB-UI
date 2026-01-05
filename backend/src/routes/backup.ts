@@ -24,7 +24,7 @@ const backupLimiter = rateLimit({
  */
 router.post('/export', requireMasterAuth, backupLimiter, async (req: Request, res: Response) => {
   try {
-    const { includeDeviceTypes = true, saveAutomatic = false } = req.body;
+    const { includeDeviceTypes = true, saveAutomatic = false, dashboards, settings } = req.body;
 
     console.log('📦 Exporting backup...');
 
@@ -45,6 +45,8 @@ router.post('/export', requireMasterAuth, backupLimiter, async (req: Request, re
       data: {
         servers,
         deviceTypes,
+        ...(dashboards && { dashboards }), // Include dashboards if provided from frontend
+        ...(settings && { settings }), // Include settings if provided from frontend
       },
     };
 
@@ -54,7 +56,7 @@ router.post('/export', requireMasterAuth, backupLimiter, async (req: Request, re
       console.log(`✅ Backup saved automatically: ${filename}`);
     }
 
-    console.log(`✅ Backup exported: ${servers.length} servers, ${deviceTypes.length} device types`);
+    console.log(`✅ Backup exported: ${servers.length} servers, ${deviceTypes.length} device types, dashboards: ${dashboards ? 'yes' : 'no'}`);
     return res.json(backup);
   } catch (error: any) {
     console.error('❌ Backup export failed:', error);

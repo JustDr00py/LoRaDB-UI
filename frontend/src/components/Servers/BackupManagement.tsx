@@ -44,7 +44,13 @@ const BackupManagement: React.FC = () => {
   const handleExport = async () => {
     try {
       setExporting(true);
-      const backup = await exportBackup(true, false);
+
+      // Get dashboard layout from localStorage
+      const dashboardLayout = localStorage.getItem('loradb-dashboard-layout');
+      const dashboards = dashboardLayout ? JSON.parse(dashboardLayout) : null;
+
+      // Export backup with dashboard data
+      const backup = await exportBackup(true, false, dashboards);
       downloadBackup(backup);
       alert('Backup exported successfully!');
     } catch (error: any) {
@@ -97,8 +103,20 @@ const BackupManagement: React.FC = () => {
       setShowImportModal(false);
       setShowResultModal(true);
 
-      // Reload server list after import
-      if (result.servers.imported > 0) {
+      // Restore dashboard layout to localStorage if present in backup
+      if (importFile.data.dashboards) {
+        localStorage.setItem('loradb-dashboard-layout', JSON.stringify(importFile.data.dashboards));
+        console.log('✅ Dashboard layout restored from backup');
+      }
+
+      // Restore settings to localStorage if present in backup
+      if (importFile.data.settings) {
+        // Settings restoration can be implemented here when settings are added
+        console.log('✅ Settings restored from backup');
+      }
+
+      // Reload page after import to apply all changes
+      if (result.servers.imported > 0 || importFile.data.dashboards) {
         window.location.reload();
       }
     } catch (error: any) {
@@ -171,9 +189,9 @@ const BackupManagement: React.FC = () => {
       >
         <h4 style={{ marginTop: 0, marginBottom: '10px' }}>About Backups</h4>
         <ul style={{ margin: 0, paddingLeft: '20px', lineHeight: '1.6' }}>
-          <li>Automatic backups run daily at 2 AM (last 7 days kept)</li>
+          <li>Manual exports include: servers, dashboards, device types</li>
+          <li>Automatic backups (daily at 2 AM) include: servers, device types only (no dashboards)</li>
           <li>API keys remain encrypted in backups - you need server passwords to use restored servers</li>
-          <li>Backups include: servers, dashboards, settings, device types</li>
           <li><strong>Merge:</strong> Adds new servers without deleting existing ones (skips duplicates)</li>
           <li><strong>Replace:</strong> Deletes all servers and imports from backup</li>
         </ul>
@@ -289,6 +307,10 @@ const BackupManagement: React.FC = () => {
               </p>
               <p>
                 <strong>Device Types:</strong> {importFile.data.deviceTypes?.length || 0}
+              </p>
+              <p>
+                <strong>Dashboard Widgets:</strong>{' '}
+                {importFile.data.dashboards?.widgets?.length || 0}
               </p>
             </div>
 

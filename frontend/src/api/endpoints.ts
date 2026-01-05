@@ -196,11 +196,15 @@ export const enforceRetention = async (): Promise<RetentionEnforceResponse> => {
 // Backup & Restore
 export const exportBackup = async (
   includeDeviceTypes: boolean = true,
-  saveAutomatic: boolean = false
+  saveAutomatic: boolean = false,
+  dashboards?: any,
+  settings?: any
 ): Promise<BackupData> => {
   const response = await apiClient.post<BackupData>('/api/backup/export', {
     includeDeviceTypes,
     saveAutomatic,
+    dashboards,
+    settings,
   });
   return response.data;
 };

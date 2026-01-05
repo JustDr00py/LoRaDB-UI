@@ -8,6 +8,8 @@ export interface BackupData {
   data: {
     servers: BackupServerData[];
     deviceTypes: DeviceTypeBackup[];
+    dashboards?: any; // Optional: Dashboard layouts from frontend localStorage
+    settings?: any; // Optional: User settings from frontend localStorage
   };
 }
 
