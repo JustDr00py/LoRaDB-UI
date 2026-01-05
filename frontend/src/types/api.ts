@@ -296,6 +296,8 @@ export interface BackupData {
   data: {
     servers: BackupServerData[];
     deviceTypes: DeviceTypeBackup[];
+    dashboards?: any; // Dashboard layouts from localStorage
+    settings?: any; // User settings from localStorage
   };
 }
 
