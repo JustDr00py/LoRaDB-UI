@@ -112,15 +112,25 @@ const ServerWelcome: React.FC = () => {
         ) : servers.length === 0 ? (
           <div>
             <div className="alert alert-info" style={{ marginBottom: '20px' }}>
-              No servers configured. Add your first server to get started.
+              No servers configured. Add your first server or import a backup to get started.
             </div>
             <button
               onClick={handleAddServerClick}
               className="btn btn-primary"
-              style={{ width: '100%' }}
+              style={{ width: '100%', marginBottom: '15px' }}
             >
               Add New Server
             </button>
+
+            <div style={{ textAlign: 'center' }}>
+              <button
+                onClick={() => navigate('/servers/manage')}
+                className="btn btn-sm"
+                style={{ background: 'transparent', border: 'none', color: 'var(--primary-color)' }}
+              >
+                Manage Servers & Import Backup
+              </button>
+            </div>
           </div>
         ) : (
           <div>

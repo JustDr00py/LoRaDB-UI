@@ -45,7 +45,7 @@ services:
     container_name: loradb-ui-frontend
     restart: unless-stopped
     volumes:
-      - ./device-types:/usr/share/nginx/html/device-types:ro
+      - ./device-types:/usr/share/nginx/html/device-types:ro,z
     ports:
       - "${FRONTEND_PORT:-3000}:3000"
     depends_on:
