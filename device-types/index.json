@@ -2,8 +2,9 @@
   "deviceTypes": [
     "dragino-lht65n.json",
     "elsys-ers.json",
-    "generic.json"
+    "generic.json",
+    "mclimate-16aspm.json"
   ],
-  "version": "1.0.0",
-  "lastUpdated": "2026-01-05T01:50:33Z"
+  "version": "1.0.1",
+  "lastUpdated": "2026-01-06T20:38:00Z"
 }

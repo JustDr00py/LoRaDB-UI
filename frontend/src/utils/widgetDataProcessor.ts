@@ -22,6 +22,8 @@ export function processWidgetData(
     return null;
   }
 
+  const valueType = measurement.valueType || 'number';
+
   // Extract uplink frames - handle both nested (f.Uplink) and direct (f) structures
   // When query is "SELECT uplink", frames may be returned directly without nesting
   const uplinkFrames = frames
@@ -32,16 +34,33 @@ export function processWidgetData(
     return {
       widgetId: widget.id,
       error: 'No uplink frames found',
-    };
+    } as WidgetData;
   }
 
+  // For string measurements, only extract latest value (no time series)
+  if (valueType === 'string') {
+    return processStringWidgetData(uplinkFrames, widget, measurement);
+  }
+
+  // For numeric measurements, use existing logic
+  return processNumericWidgetData(uplinkFrames, widget, measurement);
+}
+
+/**
+ * Process numeric widget data (existing logic)
+ */
+function processNumericWidgetData(
+  uplinkFrames: FrameData[],
+  widget: WidgetInstance,
+  measurement: MeasurementDefinition
+): WidgetData | null {
   // Extract measurement values from each frame
   const timeSeries: TimeSeriesDataPoint[] = [];
 
   for (const frame of uplinkFrames) {
-    const value = extractMeasurementValue(frame, measurement.path);
+    const value = extractMeasurementValue(frame, measurement.path, 'number');
 
-    if (value !== null && frame.received_at) {
+    if (value !== null && typeof value === 'number' && frame.received_at) {
       // Apply conversion if enabled and measurement is temperature
       const convertedValue = measurement.unit === '°C'
         ? convertTemperature(value, widget.conversion)
@@ -58,7 +77,7 @@ export function processWidgetData(
     return {
       widgetId: widget.id,
       error: `No data found at path: ${measurement.path}`,
-    };
+    } as WidgetData;
   }
 
   // Sort by timestamp (oldest first)
@@ -67,8 +86,8 @@ export function processWidgetData(
   // Get latest value
   const latest = timeSeries[timeSeries.length - 1];
 
-  // Evaluate status (use original thresholds for now - TODO: convert thresholds)
-  const status = evaluateStatus(latest.value, measurement.widgets.status.conditions);
+  // Evaluate status
+  const status = evaluateStatus(latest.value, measurement.widgets.status.conditions, 'number');
 
   // Get converted unit
   const displayUnit = getConvertedUnit(measurement.unit, widget.conversion);
@@ -85,52 +104,139 @@ export function processWidgetData(
 }
 
 /**
- * Extract a measurement value from a frame using dot notation path
+ * Process string widget data (new)
  */
-export function extractMeasurementValue(frame: FrameData, path: string): number | null {
+function processStringWidgetData(
+  uplinkFrames: FrameData[],
+  widget: WidgetInstance,
+  measurement: MeasurementDefinition
+): WidgetData | null {
+  // Extract only the latest string value (iterate from newest to oldest)
+  for (let i = uplinkFrames.length - 1; i >= 0; i--) {
+    const frame = uplinkFrames[i];
+    const value = extractMeasurementValue(frame, measurement.path, 'string');
+
+    if (value !== null && typeof value === 'string') {
+      const status = evaluateStatus(value, measurement.widgets.status.conditions, 'string');
+
+      return {
+        widgetId: widget.id,
+        currentValue: value,
+        timestamp: frame.received_at,
+        status,
+        // No timeSeries, unit, or decimals for string values
+      };
+    }
+  }
+
+  return {
+    widgetId: widget.id,
+    error: `No data found at path: ${measurement.path}`,
+  } as WidgetData;
+}
+
+/**
+ * Extract a measurement value from a frame using dot notation path
+ * Returns number or string based on measurement configuration
+ */
+export function extractMeasurementValue(
+  frame: FrameData,
+  path: string,
+  valueType: 'number' | 'string' = 'number'
+): number | string | null {
   const value = getNestedValue(frame, path);
 
   if (value === null || value === undefined) {
     return null;
   }
 
-  const numValue = Number(value);
+  if (valueType === 'string') {
+    // For string measurements, return as-is (coerced to string)
+    return String(value);
+  }
 
+  // For numeric measurements, validate and convert
+  const numValue = Number(value);
   if (isNaN(numValue)) {
     return null;
   }
-
   return numValue;
 }
 
 /**
- * Evaluate status based on conditions
+ * Evaluate status based on conditions (type-safe wrapper)
  */
 export function evaluateStatus(
-  value: number,
-  conditions?: StatusCondition[]
+  value: number | string,
+  conditions?: StatusCondition[],
+  valueType: 'number' | 'string' = 'number'
 ): { level: StatusLevel; label: string } {
   if (!conditions || conditions.length === 0) {
     return { level: 'info', label: 'Unknown' };
   }
 
+  if (valueType === 'string' && typeof value === 'string') {
+    return evaluateStringStatus(value, conditions);
+  }
+
+  if (valueType === 'number' && typeof value === 'number') {
+    return evaluateNumericStatus(value, conditions);
+  }
+
+  // Fallback for type mismatch
+  return { level: 'info', label: 'Unknown' };
+}
+
+/**
+ * Evaluate numeric status (existing logic)
+ */
+function evaluateNumericStatus(
+  value: number,
+  conditions: StatusCondition[]
+): { level: StatusLevel; label: string } {
   for (const condition of conditions) {
-    if (checkCondition(value, condition)) {
+    // Skip string conditions
+    if ('valueType' in condition && condition.valueType === 'string') {
+      continue;
+    }
+    if (checkNumericCondition(value, condition)) {
       return {
         level: condition.status,
         label: condition.label,
       };
     }
   }
-
-  // No matching condition
   return { level: 'info', label: 'Unknown' };
 }
 
 /**
- * Check if a value matches a condition
+ * Evaluate string status (new)
  */
-function checkCondition(value: number, condition: StatusCondition): boolean {
+function evaluateStringStatus(
+  value: string,
+  conditions: StatusCondition[]
+): { level: StatusLevel; label: string } {
+  for (const condition of conditions) {
+    // Filter to only string conditions
+    if ('valueType' in condition && condition.valueType === 'string' && checkStringCondition(value, condition)) {
+      return {
+        level: condition.status,
+        label: condition.label,
+      };
+    }
+  }
+  return { level: 'info', label: 'Unknown' };
+}
+
+/**
+ * Check numeric condition (existing logic renamed)
+ */
+function checkNumericCondition(value: number, condition: StatusCondition): boolean {
+  // Type guard: Skip string conditions
+  if ('valueType' in condition && condition.valueType === 'string') {
+    return false;
+  }
+
   switch (condition.operator) {
     case 'lt':
       return condition.value !== undefined && value < condition.value;
@@ -152,6 +258,19 @@ function checkCondition(value: number, condition: StatusCondition): boolean {
     default:
       return false;
   }
+}
+
+/**
+ * Check string condition (new)
+ */
+function checkStringCondition(value: string, condition: StatusCondition): boolean {
+  // Type guard: Only process string conditions
+  if (!('valueType' in condition) || condition.valueType !== 'string') {
+    return false;
+  }
+
+  // Only 'eq' operator supported for strings
+  return condition.operator === 'eq' && value === condition.value;
 }
 
 /**

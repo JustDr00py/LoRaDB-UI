@@ -1,5 +1,6 @@
 import React from 'react';
 import type { WidgetInstance, MeasurementDefinition, DeviceTypeDefinition } from '../../types/widgets';
+import type { Layout } from 'react-grid-layout';
 import { useWidgetData } from '../../hooks/useWidgetData';
 import { useCompositeWidgetData } from '../../hooks/useCompositeWidgetData';
 import { CurrentValueWidget } from './widgets/CurrentValueWidget';
@@ -16,6 +17,7 @@ interface WidgetContainerProps {
   refreshInterval?: number;
   onDelete: () => void;
   onEdit: () => void;
+  onUpdateInnerLayout?: (widgetId: string, newLayout: Layout[]) => void;
 }
 
 export const WidgetContainer: React.FC<WidgetContainerProps> = ({
@@ -26,6 +28,7 @@ export const WidgetContainer: React.FC<WidgetContainerProps> = ({
   refreshInterval,
   onDelete,
   onEdit,
+  onUpdateInnerLayout,
 }) => {
   // Determine if this is a composite widget or legacy widget
   const isComposite = !!widget.templateId && !!deviceType;
@@ -91,6 +94,7 @@ export const WidgetContainer: React.FC<WidgetContainerProps> = ({
                 deviceType={deviceType}
                 template={template}
                 measurementData={data}
+                onUpdateInnerLayout={onUpdateInnerLayout}
               />
             ) : (
               measurement && !Array.isArray(data) && (

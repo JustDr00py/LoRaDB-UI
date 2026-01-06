@@ -27,13 +27,21 @@ export const WidgetConfigModal: React.FC<WidgetConfigModalProps> = ({
   const [widgetType, setWidgetType] = useState<WidgetType>('time-series');
   const [title, setTitle] = useState('');
   const [sectionOverrides, setSectionOverrides] = useState<{
-    [measurementId: string]: { hidden?: boolean; displayTypes?: WidgetType[] };
+    [measurementId: string]: {
+      hidden?: boolean;
+      displayTypes?: WidgetType[];
+      customYAxisMin?: number;
+      customYAxisMax?: number;
+    };
   }>({});
   const [sectionOrder, setSectionOrder] = useState<string[]>([]);
   const [conversionEnabled, setConversionEnabled] = useState(false);
   const [convertTo, setConvertTo] = useState<'fahrenheit' | 'kelvin'>('fahrenheit');
   const [customYAxisMin, setCustomYAxisMin] = useState<string>('');
   const [customYAxisMax, setCustomYAxisMax] = useState<string>('');
+  const [sectionYAxis, setSectionYAxis] = useState<{
+    [measurementId: string]: { min?: string; max?: string };
+  }>({});
   const [advancedSettingsExpanded, setAdvancedSettingsExpanded] = useState(false);
 
   // Fetch devices for dropdown
@@ -59,6 +67,7 @@ export const WidgetConfigModal: React.FC<WidgetConfigModalProps> = ({
       setConvertTo('fahrenheit');
       setCustomYAxisMin('');
       setCustomYAxisMax('');
+      setSectionYAxis({});
     } else if (editWidget) {
       // Populate fields when editing
       setDevEui(editWidget.devEui);
@@ -70,6 +79,20 @@ export const WidgetConfigModal: React.FC<WidgetConfigModalProps> = ({
         setTemplateId(editWidget.templateId);
         setSectionOverrides(editWidget.sectionOverrides || {});
         setSectionOrder(editWidget.sectionOrder || []);
+
+        // Initialize sectionYAxis from sectionOverrides
+        if (editWidget.sectionOverrides) {
+          const yAxisValues: { [measurementId: string]: { min?: string; max?: string } } = {};
+          Object.entries(editWidget.sectionOverrides).forEach(([mId, override]) => {
+            if (override.customYAxisMin !== undefined || override.customYAxisMax !== undefined) {
+              yAxisValues[mId] = {
+                min: override.customYAxisMin?.toString() || '',
+                max: override.customYAxisMax?.toString() || '',
+              };
+            }
+          });
+          setSectionYAxis(yAxisValues);
+        }
       } else {
         setWidgetMode('individual');
         setMeasurementId(editWidget.measurementId || '');
@@ -171,17 +194,33 @@ export const WidgetConfigModal: React.FC<WidgetConfigModalProps> = ({
         return;
       }
 
+      // Build final sectionOverrides with Y-axis values
+      const finalSectionOverrides = { ...sectionOverrides };
+
+      Object.entries(sectionYAxis).forEach(([mId, yAxis]) => {
+        if (yAxis.min !== '' || yAxis.max !== '') {
+          if (!finalSectionOverrides[mId]) {
+            finalSectionOverrides[mId] = {};
+          }
+          if (yAxis.min !== '') {
+            finalSectionOverrides[mId].customYAxisMin = Number(yAxis.min);
+          }
+          if (yAxis.max !== '') {
+            finalSectionOverrides[mId].customYAxisMax = Number(yAxis.max);
+          }
+        }
+      });
+
       widget = {
         id: editWidget ? editWidget.id : uuidv4(),
         devEui,
         deviceType,
         templateId,
-        sectionOverrides: Object.keys(sectionOverrides).length > 0 ? sectionOverrides : undefined,
+        sectionOverrides: Object.keys(finalSectionOverrides).length > 0 ? finalSectionOverrides : undefined,
         sectionOrder: sectionOrder.length > 0 ? sectionOrder : undefined,
         title: title || undefined,
         conversion: conversionEnabled ? { enabled: true, convertTo } : undefined,
-        customYAxisMin: customYAxisMin !== '' ? Number(customYAxisMin) : undefined,
-        customYAxisMax: customYAxisMax !== '' ? Number(customYAxisMax) : undefined,
+        // customYAxisMin/Max removed for template widgets (per-measurement values in sectionOverrides)
       };
     } else {
       // Individual measurement widget (legacy)
@@ -380,44 +419,91 @@ export const WidgetConfigModal: React.FC<WidgetConfigModalProps> = ({
                       </label>
                     </div>
                     {!isHidden && (
-                      <div className="display-types">
-                        {(['current-value', 'time-series', 'gauge', 'status'] as WidgetType[]).map(
-                          (type) => {
-                            const config = measurement.widgets[type];
-                            if (!config?.enabled) return null;
+                      <>
+                        <div className="display-types">
+                          {(['current-value', 'time-series', 'gauge', 'status'] as WidgetType[]).map(
+                            (type) => {
+                              const config = measurement.widgets[type];
+                              if (!config?.enabled) return null;
 
-                            return (
-                              <label key={type} className="checkbox-label small">
+                              return (
+                                <label key={type} className="checkbox-label small">
+                                  <input
+                                    type="checkbox"
+                                    checked={displayTypes.includes(type)}
+                                    onChange={(e) => {
+                                      let newDisplayTypes: WidgetType[];
+                                      if (e.target.checked) {
+                                        newDisplayTypes = [...displayTypes, type];
+                                      } else {
+                                        newDisplayTypes = displayTypes.filter((t) => t !== type);
+                                      }
+                                      setSectionOverrides({
+                                        ...sectionOverrides,
+                                        [mId]: {
+                                          ...override,
+                                          displayTypes: newDisplayTypes,
+                                        },
+                                      });
+                                    }}
+                                  />
+                                  <span>
+                                    {type
+                                      .split('-')
+                                      .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+                                      .join(' ')}
+                                  </span>
+                                </label>
+                              );
+                            }
+                          )}
+                        </div>
+
+                        {/* Y-Axis Range Controls */}
+                        {displayTypes.includes('time-series') && (
+                          <div className="section-y-axis-controls">
+                            <h5>Y-Axis Range</h5>
+                            <div className="y-axis-inputs">
+                              <div className="form-group-inline">
+                                <label>Min:</label>
                                 <input
-                                  type="checkbox"
-                                  checked={displayTypes.includes(type)}
+                                  type="number"
+                                  placeholder="Auto"
+                                  value={sectionYAxis[mId]?.min || ''}
                                   onChange={(e) => {
-                                    let newDisplayTypes: WidgetType[];
-                                    if (e.target.checked) {
-                                      newDisplayTypes = [...displayTypes, type];
-                                    } else {
-                                      newDisplayTypes = displayTypes.filter((t) => t !== type);
-                                    }
-                                    setSectionOverrides({
-                                      ...sectionOverrides,
+                                    setSectionYAxis({
+                                      ...sectionYAxis,
                                       [mId]: {
-                                        ...override,
-                                        displayTypes: newDisplayTypes,
+                                        ...sectionYAxis[mId],
+                                        min: e.target.value,
                                       },
                                     });
                                   }}
+                                  step="any"
                                 />
-                                <span>
-                                  {type
-                                    .split('-')
-                                    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
-                                    .join(' ')}
-                                </span>
-                              </label>
-                            );
-                          }
+                              </div>
+                              <div className="form-group-inline">
+                                <label>Max:</label>
+                                <input
+                                  type="number"
+                                  placeholder="Auto"
+                                  value={sectionYAxis[mId]?.max || ''}
+                                  onChange={(e) => {
+                                    setSectionYAxis({
+                                      ...sectionYAxis,
+                                      [mId]: {
+                                        ...sectionYAxis[mId],
+                                        max: e.target.value,
+                                      },
+                                    });
+                                  }}
+                                  step="any"
+                                />
+                              </div>
+                            </div>
+                          </div>
                         )}
-                      </div>
+                      </>
                     )}
                   </div>
                 );

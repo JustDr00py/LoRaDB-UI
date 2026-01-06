@@ -19,15 +19,30 @@ export interface Threshold {
   label: string;
 }
 
-// Status condition for status widgets
-export interface StatusCondition {
+// Status condition for status widgets - discriminated union for string/numeric support
+interface BaseStatusCondition {
+  status: StatusLevel;
+  label: string;
+}
+
+// Numeric condition (existing behavior, backward compatible)
+export interface NumericStatusCondition extends BaseStatusCondition {
+  valueType?: 'number';  // Optional for backward compatibility
   operator: ConditionOperator;
   value?: number;
   min?: number;
   max?: number;
-  status: StatusLevel;
-  label: string;
 }
+
+// String condition (new)
+export interface StringStatusCondition extends BaseStatusCondition {
+  valueType: 'string';  // Required discriminator
+  operator: 'eq';       // Only 'eq' operator allowed for strings
+  value: string;        // String value to match
+}
+
+// Union type
+export type StatusCondition = NumericStatusCondition | StringStatusCondition;
 
 // Gauge zone for gauge widgets
 export interface GaugeZone {
@@ -70,6 +85,7 @@ export interface MeasurementDefinition {
   name: string;
   unit: string;
   decimals: number;
+  valueType?: 'number' | 'string';  // NEW: defaults to 'number' for backward compatibility
   defaultWidget: WidgetType;
   widgets: {
     'current-value': CurrentValueWidgetConfig;
@@ -141,9 +157,15 @@ export interface WidgetInstance {
     [measurementId: string]: {
       hidden?: boolean;           // Hide this measurement
       displayTypes?: WidgetType[]; // Override which visualizations to show
+      customYAxisMin?: number;    // Per-measurement Y-axis minimum
+      customYAxisMax?: number;    // Per-measurement Y-axis maximum
     };
   };
   sectionOrder?: string[];        // Custom order of measurement IDs (optional)
+
+  // NEW: Inner grid layout for draggable measurements
+  innerLayout?: Layout[];         // React-grid-layout positions for inner widgets
+  innerLayoutLocked?: boolean;    // Lock/unlock edit mode default state
 
   // Shared fields
   title?: string;                 // Optional custom title
@@ -167,20 +189,33 @@ export interface DashboardLayout {
   };
 }
 
-// Widget data - processed for rendering
-export interface WidgetData {
+// Widget data - processed for rendering - discriminated union for string/numeric support
+interface BaseWidgetData {
   widgetId: string;
-  currentValue?: number;
   timestamp?: string;
-  timeSeries?: Array<{ timestamp: string; value: number }>;
+  timeSeries?: Array<{ timestamp: string; value: number }>;  // Always numeric for charts
   status?: {
     level: StatusLevel;
     label: string;
   };
-  unit?: string; // Converted unit (e.g., °F instead of °C)
-  decimals?: number; // Decimal places for display
   error?: string;
 }
+
+// Numeric widget data (existing behavior)
+export interface NumericWidgetData extends BaseWidgetData {
+  currentValue: number;
+  unit?: string;       // Converted unit (e.g., °F instead of °C)
+  decimals?: number;   // Decimal places for display
+}
+
+// String widget data (new)
+export interface StringWidgetData extends BaseWidgetData {
+  currentValue: string;
+  // No unit or decimals for string values
+}
+
+// Union type
+export type WidgetData = NumericWidgetData | StringWidgetData;
 
 // Time series data point
 export interface TimeSeriesDataPoint {

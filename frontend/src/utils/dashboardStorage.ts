@@ -7,7 +7,7 @@ const STORAGE_KEY = 'loradb-dashboard-layout';
  */
 export function getDefaultLayout(): DashboardLayout {
   return {
-    version: '1.0',
+    version: '2.0',
     timeRange: '24h',
     autoRefresh: true,
     refreshInterval: 60,
@@ -30,9 +30,19 @@ export function loadDashboardLayout(): DashboardLayout | null {
 
     const layout = JSON.parse(stored) as DashboardLayout;
 
+    // Migrate from v1.0 to v2.0 if needed
+    if (layout.version === '1.0') {
+      console.info('Migrating dashboard layout from v1.0 to v2.0');
+      layout.version = '2.0';
+      // innerLayout will be undefined for existing widgets, which is fine
+      // The CompositeDeviceWidget will generate default layouts automatically
+      saveDashboardLayout(layout); // Save migrated version
+      return layout;
+    }
+
     // Validate version compatibility
-    if (layout.version !== '1.0') {
-      console.warn('Dashboard layout version mismatch, using default');
+    if (layout.version !== '2.0') {
+      console.warn(`Dashboard layout version ${layout.version} not supported, using default`);
       return null;
     }
 

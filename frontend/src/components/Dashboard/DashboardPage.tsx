@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import type { Layout } from 'react-grid-layout';
 import { useDashboardLayout } from '../../hooks/useDashboardLayout';
 import { useDeviceTypes } from '../../hooks/useDeviceTypes';
 import { DashboardGrid } from './DashboardGrid';
@@ -95,6 +96,10 @@ export const DashboardPage: React.FC = () => {
     setEditingWidget(undefined);
   };
 
+  const handleUpdateInnerLayout = (widgetId: string, newLayout: Layout[]) => {
+    updateWidget(widgetId, { innerLayout: newLayout });
+  };
+
   if (deviceTypesLoading) {
     return (
       <div className="dashboard-page">
@@ -149,6 +154,7 @@ export const DashboardPage: React.FC = () => {
           onLayoutChange={updateLayout}
           onDeleteWidget={deleteWidget}
           onEditWidget={handleEditWidget}
+          onUpdateInnerLayout={handleUpdateInnerLayout}
           getMeasurement={getMeasurement}
           getDeviceType={getDeviceType}
         />

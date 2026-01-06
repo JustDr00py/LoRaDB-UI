@@ -552,6 +552,7 @@ pre {
   background: white;
   border-radius: 8px;
   overflow: hidden;
+  height: 100% !important;
 }
 
 /* Widget Container */
@@ -618,8 +619,8 @@ pre {
   padding: 16px;
   display: flex;
   flex-direction: column;
-  justify-content: center;
-  min-height: 100px;
+  min-height: 0;
+  overflow: hidden;
 }
 
 .widget-loading,
@@ -633,6 +634,8 @@ pre {
   padding: 20px;
   text-align: center;
   color: var(--text-secondary);
+  flex: 1;
+  height: 100%;
 }
 
 .widget-error {
@@ -643,45 +646,56 @@ pre {
 /* Current Value Widget */
 .current-value-widget {
   text-align: center;
-  padding: 20px;
+  padding: 12px 8px;
   border-left: 4px solid var(--primary-color);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  height: 100%;
+  min-height: 0;
+  flex: 1;
 }
 
 .current-value-widget .value {
-  font-size: 2.5rem;
+  font-size: clamp(1.25rem, 4vw, 2.5rem);
   font-weight: bold;
   line-height: 1.2;
-  margin-bottom: 8px;
+  margin-bottom: 4px;
 }
 
 .current-value-widget .unit {
-  font-size: 1rem;
+  font-size: clamp(0.75rem, 2vw, 1rem);
   color: var(--text-secondary);
-  margin-bottom: 8px;
+  margin-bottom: 4px;
 }
 
 .current-value-widget .threshold-label {
-  font-size: 0.875rem;
+  font-size: clamp(0.75rem, 1.5vw, 0.875rem);
   font-weight: 600;
-  margin-bottom: 8px;
+  margin-bottom: 4px;
 }
 
 .current-value-widget .timestamp {
-  font-size: 0.75rem;
+  font-size: clamp(0.625rem, 1.2vw, 0.75rem);
   color: var(--text-secondary);
-  margin-top: 8px;
+  margin-top: 4px;
 }
 
 /* Time Series Widget */
 .time-series-widget {
   width: 100%;
   height: 100%;
+  min-height: 0;
+  flex: 1;
 }
 
 /* Gauge Widget */
 .gauge-widget {
   width: 100%;
   height: 100%;
+  min-height: 0;
+  flex: 1;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -693,32 +707,36 @@ pre {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 16px;
-  padding: 20px;
+  gap: 8px;
+  height: 100%;
+  min-height: 0;
+  padding: 12px;
+  flex: 1;
 }
 
 .status-badge {
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 12px 24px;
-  border-radius: 24px;
+  gap: 6px;
+  padding: 8px 16px;
+  border-radius: 20px;
   color: white;
   font-weight: 600;
-  font-size: 1rem;
+  font-size: clamp(0.75rem, 2vw, 1rem);
 }
 
 .status-icon {
-  font-size: 1.25rem;
+  font-size: clamp(1rem, 2.5vw, 1.25rem);
 }
 
 .status-label {
-  font-size: 1rem;
+  font-size: clamp(0.75rem, 2vw, 1rem);
 }
 
 .status-value {
-  font-size: 1.125rem;
+  font-size: clamp(0.875rem, 2.2vw, 1.125rem);
   color: var(--text-primary);
+  font-weight: 600;
 }
 
 /* ==================== Composite Widget Styles ==================== */
@@ -729,14 +747,15 @@ pre {
   flex-direction: column;
   height: 100%;
   width: 100%;
+  min-height: 0;
 }
 
 .composite-body {
   flex: 1;
   display: flex;
-  padding: 16px;
+  padding: 0;
   overflow: auto;
-  gap: 16px;
+  min-height: 0;
 }
 
 /* Layout Types */
@@ -1198,4 +1217,152 @@ pre {
     width: 95%;
     max-width: none;
   }
+}
+
+/* Y-Axis Controls for Template Sections */
+.section-y-axis-controls {
+  margin-top: 1rem;
+  padding: 0.75rem;
+  background: #f8f9fa;
+  border-radius: 4px;
+}
+
+.section-y-axis-controls h5 {
+  margin: 0 0 0.5rem 0;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #495057;
+}
+
+.y-axis-inputs {
+  display: flex;
+  gap: 1rem;
+}
+
+.form-group-inline {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex: 1;
+}
+
+.form-group-inline label {
+  font-size: 0.875rem;
+  font-weight: 500;
+  min-width: 40px;
+}
+
+.form-group-inline input[type="number"] {
+  flex: 1;
+  padding: 0.5rem;
+  border: 1px solid #ced4da;
+  border-radius: 4px;
+  font-size: 0.875rem;
+}
+
+.form-group-inline input[type="number"]:focus {
+  outline: none;
+  border-color: #2563eb;
+  box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.1);
+}
+
+/* Composite Widget Header with Edit Button */
+.composite-header {
+  display: flex;
+  justify-content: flex-end;
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--border-color, #e5e7eb);
+  background: var(--surface-color, #fff);
+}
+
+.edit-layout-btn {
+  padding: 6px 12px;
+  background: var(--primary-color, #2563eb);
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.875rem;
+  font-weight: 500;
+  transition: background 0.2s;
+}
+
+.edit-layout-btn:hover {
+  background: var(--primary-hover, #1d4ed8);
+}
+
+/* Inner Grid Container */
+.composite-grid-container {
+  flex: 1;
+  overflow: auto;
+  position: relative;
+}
+
+.composite-inner-grid {
+  min-height: 400px;
+}
+
+/* Inner Grid Item */
+.inner-grid-item {
+  display: flex;
+  flex-direction: column;
+  background: white;
+  border: 1px solid var(--border-color, #e5e7eb);
+  border-radius: 6px;
+  overflow: hidden;
+}
+
+/* Inner Widget Header (drag handle - only visible in edit mode) */
+.inner-widget-header {
+  padding: 8px 12px;
+  background: var(--bg-color, #f9fafb);
+  border-bottom: 1px solid var(--border-color, #e5e7eb);
+  cursor: move;
+  user-select: none;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.inner-widget-header::before {
+  content: '⋮⋮';
+  color: var(--text-secondary, #6b7280);
+  font-weight: bold;
+}
+
+.inner-widget-label {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--text-primary, #1f2937);
+}
+
+/* Inner Widget Content */
+.inner-widget-content {
+  flex: 1;
+  padding: 8px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  min-height: 0; /* Important for flex child to shrink */
+}
+
+/* Resize Handle for Inner Items */
+.inner-grid-item .react-resizable-handle {
+  position: absolute;
+  width: 20px;
+  height: 20px;
+  bottom: 0;
+  right: 0;
+  cursor: se-resize;
+}
+
+.inner-grid-item .react-resizable-handle::after {
+  content: '';
+  position: absolute;
+  bottom: 4px;
+  right: 4px;
+  width: 8px;
+  height: 8px;
+  border-right: 2px solid var(--text-secondary, #6b7280);
+  border-bottom: 2px solid var(--text-secondary, #6b7280);
 }

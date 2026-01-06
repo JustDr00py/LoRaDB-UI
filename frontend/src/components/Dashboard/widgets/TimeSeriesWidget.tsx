@@ -9,6 +9,10 @@ interface TimeSeriesWidgetProps {
   measurement: MeasurementDefinition;
   config: TimeSeriesWidgetConfig;
   widget: WidgetInstance;
+  yAxisOverride?: {
+    customYAxisMin?: number;
+    customYAxisMax?: number;
+  };
 }
 
 export const TimeSeriesWidget: React.FC<TimeSeriesWidgetProps> = ({
@@ -16,6 +20,7 @@ export const TimeSeriesWidget: React.FC<TimeSeriesWidgetProps> = ({
   measurement,
   config,
   widget,
+  yAxisOverride,
 }) => {
   if (data.error) {
     return <div className="widget-error">{data.error}</div>;
@@ -25,35 +30,57 @@ export const TimeSeriesWidget: React.FC<TimeSeriesWidgetProps> = ({
     return <div className="widget-no-data">No time series data available</div>;
   }
 
-  const displayUnit = data.unit || measurement.unit;
-  const displayDecimals = data.decimals !== undefined ? data.decimals : measurement.decimals;
+  // Time series only works with numeric data
+  if (typeof data.currentValue !== 'number') {
+    return <div className="widget-error">Time series widget requires numeric data</div>;
+  }
 
-  // Get Y-axis range: prioritize custom values, then convert default values if conversion is enabled
+  const displayUnit = 'unit' in data ? data.unit : measurement.unit;
+  const displayDecimals = 'decimals' in data && data.decimals !== undefined ? data.decimals : measurement.decimals;
+
+  // Y-AXIS CONFIGURATION WITH PRIORITY:
+  // 1. Per-measurement override (highest priority)
+  // 2. Global widget customYAxisMin/Max (for backward compatibility)
+  // 3. Temperature conversion
+  // 4. Measurement definition config (lowest priority)
+
   let yAxisMin = config.yAxisMin;
   let yAxisMax = config.yAxisMax;
 
-  if (widget.customYAxisMin !== undefined) {
+  // PRIORITY 1: Per-measurement override (NEW)
+  if (yAxisOverride?.customYAxisMin !== undefined) {
+    yAxisMin = yAxisOverride.customYAxisMin;
+  }
+  // PRIORITY 2: Global widget custom value (backward compatibility)
+  else if (widget.customYAxisMin !== undefined) {
     yAxisMin = widget.customYAxisMin;
-  } else if (widget.conversion?.enabled && measurement.unit === '°C') {
+  }
+  // PRIORITY 3: Temperature conversion
+  else if (widget.conversion?.enabled && measurement.unit === '°C') {
     const converted = getConvertedYAxisRange(config.yAxisMin, config.yAxisMax, widget.conversion);
     yAxisMin = converted.min;
     yAxisMax = converted.max;
   }
 
-  if (widget.customYAxisMax !== undefined) {
+  // Same logic for max
+  if (yAxisOverride?.customYAxisMax !== undefined) {
+    yAxisMax = yAxisOverride.customYAxisMax;
+  } else if (widget.customYAxisMax !== undefined) {
     yAxisMax = widget.customYAxisMax;
   }
 
   const option = {
     grid: {
-      left: 60,
-      right: 20,
-      top: 20,
-      bottom: 40,
+      left: 50,
+      right: 15,
+      top: 15,
+      bottom: 30,
+      containLabel: true,
     },
     xAxis: {
       type: 'time',
       axisLabel: {
+        fontSize: 10,
         formatter: (value: number) => {
           const date = new Date(value);
           return date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
@@ -63,9 +90,13 @@ export const TimeSeriesWidget: React.FC<TimeSeriesWidgetProps> = ({
     yAxis: {
       type: 'value',
       name: displayUnit,
+      nameTextStyle: {
+        fontSize: 11,
+      },
       min: yAxisMin,
       max: yAxisMax,
       axisLabel: {
+        fontSize: 10,
         formatter: (value: number) => value.toFixed(displayDecimals),
       },
     },
@@ -86,6 +117,9 @@ export const TimeSeriesWidget: React.FC<TimeSeriesWidgetProps> = ({
     ],
     tooltip: {
       trigger: 'axis',
+      textStyle: {
+        fontSize: 12,
+      },
       formatter: (params: any) => {
         const point = params[0];
         const value = point.value[1].toFixed(displayDecimals);
@@ -97,7 +131,11 @@ export const TimeSeriesWidget: React.FC<TimeSeriesWidgetProps> = ({
 
   return (
     <div className="time-series-widget">
-      <ReactECharts option={option} style={{ height: '250px', width: '100%' }} />
+      <ReactECharts
+        option={option}
+        style={{ height: '100%', width: '100%' }}
+        opts={{ renderer: 'canvas' }}
+      />
     </div>
   );
 };

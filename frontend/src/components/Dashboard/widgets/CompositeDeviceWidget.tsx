@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useCallback, useMemo } from 'react';
 import type {
   WidgetInstance,
   DeviceTypeDefinition,
@@ -6,17 +6,112 @@ import type {
   TemplateSection,
   WidgetData,
   WidgetType,
+  MeasurementDefinition,
 } from '../../../types/widgets';
+import type { Layout } from 'react-grid-layout';
 import { CurrentValueWidget } from './CurrentValueWidget';
 import { TimeSeriesWidget } from './TimeSeriesWidget';
 import { GaugeWidget } from './GaugeWidget';
 import { StatusWidget } from './StatusWidget';
+import { CompositeGridLayout } from './CompositeGridLayout';
 
 interface CompositeDeviceWidgetProps {
   widget: WidgetInstance;
   deviceType: DeviceTypeDefinition;
   template: WidgetTemplate;
   measurementData: Array<{ measurementId: string; data: WidgetData }>;
+  onUpdateInnerLayout?: (widgetId: string, newLayout: Layout[]) => void;
+}
+
+// Generate default grid layout from template structure
+function generateDefaultLayout(
+  template: WidgetTemplate,
+  widget: WidgetInstance
+): Layout[] {
+  const layout: Layout[] = [];
+  let y = 0;
+
+  // Helper to get measurement IDs from section (handles both single and array)
+  const getMeasurementIds = (section: TemplateSection): string[] => {
+    return Array.isArray(section.measurementId)
+      ? section.measurementId
+      : [section.measurementId];
+  };
+
+  // Apply section ordering if specified
+  let sections = template.sections;
+  if (widget.sectionOrder && widget.sectionOrder.length > 0) {
+    const sectionMap = new Map<string, TemplateSection>();
+    template.sections.forEach((section) => {
+      const measurementId = Array.isArray(section.measurementId)
+        ? section.measurementId[0]
+        : section.measurementId;
+      sectionMap.set(measurementId, section);
+    });
+
+    const ordered: TemplateSection[] = [];
+    widget.sectionOrder.forEach((measurementId) => {
+      const section = sectionMap.get(measurementId);
+      if (section) {
+        ordered.push(section);
+        sectionMap.delete(measurementId);
+      }
+    });
+
+    sectionMap.forEach((section) => {
+      ordered.push(section);
+    });
+
+    sections = ordered;
+  }
+
+  sections.forEach((section, sectionIdx) => {
+    const measurementIds = getMeasurementIds(section);
+
+    measurementIds.forEach((measurementId) => {
+      // Check if hidden
+      if (widget.sectionOverrides?.[measurementId]?.hidden) {
+        return;
+      }
+
+      // Get display types (from override or template)
+      const displayTypes =
+        widget.sectionOverrides?.[measurementId]?.displayTypes || section.displayTypes;
+
+      displayTypes.forEach((type, typeIdx) => {
+        // Create unique key for each widget
+        const key = `${measurementId}-${type}-${sectionIdx}`;
+
+        // Determine size based on widget type
+        let w = 6,
+          h = 3; // Default: half width, 3 rows
+        if (type === 'time-series') {
+          w = 12; // Full width
+          h = 6; // Taller for charts
+        } else if (type === 'gauge') {
+          w = 4; // Third width
+          h = 5;
+        } else if (type === 'current-value' || type === 'status') {
+          w = 3; // Quarter width
+          h = 2; // Compact
+        }
+
+        layout.push({
+          i: key,
+          x: (typeIdx * w) % 12, // Position side by side
+          y: y,
+          w: w,
+          h: h,
+          minW: 2,
+          minH: 2,
+        });
+      });
+    });
+
+    y += 6; // Move down for next section
+  });
+
+  return layout;
 }
 
 export const CompositeDeviceWidget: React.FC<CompositeDeviceWidgetProps> = ({
@@ -24,142 +119,62 @@ export const CompositeDeviceWidget: React.FC<CompositeDeviceWidgetProps> = ({
   deviceType,
   template,
   measurementData,
+  onUpdateInnerLayout,
 }) => {
-  // Render a single widget type for a measurement
-  const renderWidget = (
-    type: WidgetType,
-    measurementId: string,
-    data: WidgetData,
-    size?: 'small' | 'medium' | 'large'
-  ) => {
-    const measurement = deviceType.measurements.find((m) => m.id === measurementId);
-    if (!measurement) {
-      return <div className="widget-error">Measurement not found: {measurementId}</div>;
-    }
+  // Edit mode state
+  const [editMode, setEditMode] = useState(false);
+  const [innerLayout, setInnerLayout] = useState<Layout[]>(
+    widget.innerLayout || generateDefaultLayout(template, widget)
+  );
 
-    const sizeClass = size ? `widget-${size}` : 'widget-medium';
-
-    switch (type) {
-      case 'current-value':
-        return (
-          <div key={`${measurementId}-${type}`} className={`composite-widget-item ${sizeClass}`}>
-            <CurrentValueWidget
-              data={data}
-              measurement={measurement}
-              config={measurement.widgets['current-value']}
-            />
-          </div>
-        );
-
-      case 'time-series':
-        return (
-          <div key={`${measurementId}-${type}`} className={`composite-widget-item ${sizeClass}`}>
+  // Helper function to render a widget by type
+  const renderWidgetByType = useCallback(
+    (
+      type: WidgetType,
+      measurement: MeasurementDefinition,
+      data: WidgetData,
+      yAxisOverride?: { customYAxisMin?: number; customYAxisMax?: number }
+    ): React.ReactNode => {
+      switch (type) {
+        case 'time-series':
+          return (
             <TimeSeriesWidget
               data={data}
               measurement={measurement}
               config={measurement.widgets['time-series']}
               widget={widget}
+              yAxisOverride={yAxisOverride}
             />
-          </div>
-        );
-
-      case 'gauge':
-        return (
-          <div key={`${measurementId}-${type}`} className={`composite-widget-item ${sizeClass}`}>
+          );
+        case 'gauge':
+          return (
             <GaugeWidget
               data={data}
               measurement={measurement}
               config={measurement.widgets.gauge}
               widget={widget}
+              yAxisOverride={yAxisOverride}
             />
-          </div>
-        );
-
-      case 'status':
-        return (
-          <div key={`${measurementId}-${type}`} className={`composite-widget-item ${sizeClass}`}>
-            <StatusWidget data={data} measurement={measurement} />
-          </div>
-        );
-
-      default:
-        return (
-          <div key={`${measurementId}-${type}`} className="widget-error">
-            Unknown widget type: {type}
-          </div>
-        );
-    }
-  };
-
-  // Render a template section (one or more measurements)
-  const renderSection = (section: TemplateSection) => {
-    // Check if this section is hidden via overrides
-    if (Array.isArray(section.measurementId)) {
-      // Combined chart section - handle multiple measurements
-      const sectionMeasurementId = section.measurementId[0]; // Use first measurement for override lookup
-      if (widget.sectionOverrides?.[sectionMeasurementId]?.hidden) {
-        return null;
+          );
+        case 'current-value':
+          return (
+            <CurrentValueWidget
+              data={data}
+              measurement={measurement}
+              config={measurement.widgets['current-value']}
+            />
+          );
+        case 'status':
+          return <StatusWidget data={data} measurement={measurement} />;
+        default:
+          return <div className="widget-error">Unknown widget type: {type}</div>;
       }
-
-      // For combined charts, we'll need special handling in the future
-      // For now, render each measurement separately
-      return section.measurementId.map((mId) => {
-        const data = measurementData.find((md) => md.measurementId === mId);
-        if (!data) return null;
-
-        const displayTypes =
-          widget.sectionOverrides?.[mId]?.displayTypes || section.displayTypes;
-
-        return (
-          <div key={mId} className="composite-section">
-            <div className="composite-section-label">
-              {deviceType.measurements.find((m) => m.id === mId)?.name}
-            </div>
-            {displayTypes.map((type) =>
-              renderWidget(type, mId, data.data, section.layout?.[type]?.size)
-            )}
-          </div>
-        );
-      });
-    } else {
-      // Single measurement section
-      const measurementId = section.measurementId;
-
-      // Check if hidden via overrides
-      if (widget.sectionOverrides?.[measurementId]?.hidden) {
-        return null;
-      }
-
-      const data = measurementData.find((md) => md.measurementId === measurementId);
-      if (!data) {
-        return (
-          <div key={measurementId} className="composite-section">
-            <div className="widget-no-data">No data for {measurementId}</div>
-          </div>
-        );
-      }
-
-      // Get display types (from override or template)
-      const displayTypes =
-        widget.sectionOverrides?.[measurementId]?.displayTypes || section.displayTypes;
-
-      return (
-        <div key={measurementId} className="composite-section">
-          <div className="composite-section-label">
-            {deviceType.measurements.find((m) => m.id === measurementId)?.name}
-          </div>
-          <div className="composite-section-widgets">
-            {displayTypes.map((type) =>
-              renderWidget(type, measurementId, data.data, section.layout?.[type]?.size)
-            )}
-          </div>
-        </div>
-      );
-    }
-  };
+    },
+    [widget]
+  );
 
   // Apply custom section ordering if specified
-  const orderedSections = React.useMemo(() => {
+  const orderedSections = useMemo(() => {
     if (!widget.sectionOrder || widget.sectionOrder.length === 0) {
       return template.sections;
     }
@@ -191,13 +206,96 @@ export const CompositeDeviceWidget: React.FC<CompositeDeviceWidgetProps> = ({
     return ordered;
   }, [template.sections, widget.sectionOrder]);
 
+  // Build grid items from ordered sections
+  const gridItems = useMemo(() => {
+    const items: React.ReactElement[] = [];
+
+    orderedSections.forEach((section, sectionIdx) => {
+      const measurementIds = Array.isArray(section.measurementId)
+        ? section.measurementId
+        : [section.measurementId];
+
+      measurementIds.forEach((measurementId) => {
+        // Check if hidden
+        if (widget.sectionOverrides?.[measurementId]?.hidden) {
+          return;
+        }
+
+        const measurement = deviceType.measurements.find((m) => m.id === measurementId);
+        if (!measurement) return;
+
+        const data = measurementData.find((md) => md.measurementId === measurementId);
+        if (!data) return;
+
+        // Get display types from override or template
+        const displayTypes =
+          widget.sectionOverrides?.[measurementId]?.displayTypes || section.displayTypes;
+
+        displayTypes.forEach((type) => {
+          const key = `${measurementId}-${type}-${sectionIdx}`;
+          const yAxisOverride = widget.sectionOverrides?.[measurementId];
+
+          // Render widget with wrapper for grid
+          items.push(
+            <div key={key} className="inner-grid-item">
+              {editMode && (
+                <div className="inner-widget-header">
+                  <span className="inner-widget-label">
+                    {measurement.name} - {type}
+                  </span>
+                </div>
+              )}
+              <div className="inner-widget-content">
+                {renderWidgetByType(type, measurement, data.data, yAxisOverride)}
+              </div>
+            </div>
+          );
+        });
+      });
+    });
+
+    return items;
+  }, [
+    orderedSections,
+    measurementData,
+    widget,
+    deviceType,
+    editMode,
+    renderWidgetByType,
+  ]);
+
+  // Handle layout change
+  const handleLayoutChange = useCallback(
+    (newLayout: Layout[]) => {
+      setInnerLayout(newLayout);
+      if (onUpdateInnerLayout) {
+        onUpdateInnerLayout(widget.id, newLayout);
+      }
+    },
+    [widget.id, onUpdateInnerLayout]
+  );
+
   return (
-    <div className={`composite-widget composite-layout-${template.layout}`}>
-      <div className="composite-body">
-        {orderedSections.map((section, idx) => (
-          <React.Fragment key={idx}>{renderSection(section)}</React.Fragment>
-        ))}
+    <div className="composite-widget">
+      {/* Edit Mode Toggle */}
+      <div className="composite-header">
+        <button
+          className="edit-layout-btn"
+          onClick={() => setEditMode(!editMode)}
+          title={editMode ? 'Lock Layout' : 'Edit Layout'}
+        >
+          {editMode ? '🔓 Lock' : '🔒 Edit Layout'}
+        </button>
       </div>
+
+      {/* Grid Layout */}
+      <CompositeGridLayout
+        layout={innerLayout}
+        onLayoutChange={handleLayoutChange}
+        editMode={editMode}
+      >
+        {gridItems}
+      </CompositeGridLayout>
     </div>
   );
 };
