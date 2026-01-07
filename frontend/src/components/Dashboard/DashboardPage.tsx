@@ -155,6 +155,7 @@ export const DashboardPage: React.FC = () => {
           onDeleteWidget={deleteWidget}
           onEditWidget={handleEditWidget}
           onUpdateInnerLayout={handleUpdateInnerLayout}
+          onUpdateWidget={updateWidget}
           getMeasurement={getMeasurement}
           getDeviceType={getDeviceType}
         />

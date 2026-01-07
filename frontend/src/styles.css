@@ -1063,6 +1063,8 @@ pre {
   justify-content: flex-end;
   gap: 10px;
   padding-top: 20px;
+  padding-bottom: 20px;
+  padding-right: 20px;
   margin-top: 20px;
   border-top: 1px solid var(--border-color);
 }
@@ -1357,6 +1359,23 @@ pre {
   font-size: 0.875rem;
   font-weight: 500;
   color: var(--text-primary, #1f2937);
+  flex: 1;
+}
+
+.inner-widget-customize-btn {
+  background: none;
+  border: none;
+  color: var(--text-secondary, #6b7280);
+  cursor: pointer;
+  padding: 4px 8px;
+  font-size: 1rem;
+  border-radius: 4px;
+  transition: all 0.2s;
+}
+
+.inner-widget-customize-btn:hover {
+  background: var(--hover-color, #f3f4f6);
+  color: var(--primary-color, #3b82f6);
 }
 
 /* Inner Widget Content */
@@ -1388,4 +1407,176 @@ pre {
   height: 8px;
   border-right: 2px solid var(--text-secondary, #6b7280);
   border-bottom: 2px solid var(--text-secondary, #6b7280);
+}
+
+/* ========================================
+   Measurement Customization Modal
+   ======================================== */
+
+.measurement-customization-modal {
+  max-width: 700px;
+}
+
+.customization-info {
+  padding: 12px;
+  background: var(--bg-color, #f9fafb);
+  border-radius: 6px;
+  margin-bottom: 20px;
+}
+
+.customization-info p {
+  margin: 0;
+  font-size: 0.9rem;
+  color: var(--text-secondary, #6b7280);
+}
+
+.form-section {
+  margin-bottom: 24px;
+}
+
+.form-section h3 {
+  font-size: 1rem;
+  font-weight: 600;
+  margin: 0 0 8px 0;
+  color: var(--text-primary, #1f2937);
+}
+
+.form-help {
+  font-size: 0.875rem;
+  color: var(--text-secondary, #6b7280);
+  margin: 0 0 16px 0;
+}
+
+.color-input {
+  width: 60px;
+  height: 36px;
+  border: 1px solid var(--border-color, #e5e7eb);
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.color-preview {
+  display: inline-block;
+  padding: 4px 12px;
+  border-radius: 4px;
+  font-size: 0.875rem;
+  color: white;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+  margin-left: 8px;
+}
+
+/* Threshold Configuration */
+.threshold-config {
+  margin-bottom: 12px;
+}
+
+.threshold-row {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  padding: 12px;
+  background: var(--bg-color, #f9fafb);
+  border: 1px solid var(--border-color, #e5e7eb);
+  border-radius: 6px;
+}
+
+.threshold-row select,
+.threshold-row input[type="number"],
+.threshold-row input[type="text"] {
+  flex: 1;
+  min-width: 80px;
+}
+
+.threshold-row .color-input {
+  flex: 0 0 60px;
+}
+
+/* Status Condition Configuration */
+.status-condition-config {
+  margin-bottom: 12px;
+}
+
+.status-row {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  padding: 12px;
+  background: var(--bg-color, #f9fafb);
+  border: 1px solid var(--border-color, #e5e7eb);
+  border-radius: 6px;
+}
+
+.status-row select,
+.status-row input[type="number"],
+.status-row input[type="text"] {
+  flex: 1;
+  min-width: 80px;
+}
+
+/* Gauge Zone Configuration */
+.gauge-zone-config {
+  margin-bottom: 12px;
+}
+
+.zone-row {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  padding: 12px;
+  background: var(--bg-color, #f9fafb);
+  border: 1px solid var(--border-color, #e5e7eb);
+  border-radius: 6px;
+}
+
+.zone-row input[type="number"] {
+  flex: 1;
+  min-width: 80px;
+}
+
+.zone-row .color-input {
+  flex: 0 0 60px;
+}
+
+/* Remove Button */
+.btn-remove {
+  background: none;
+  border: none;
+  color: var(--danger-color, #ef4444);
+  font-size: 1.5rem;
+  cursor: pointer;
+  padding: 0;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+  transition: all 0.2s;
+  flex-shrink: 0;
+}
+
+.btn-remove:hover {
+  background: var(--danger-light, #fee2e2);
+}
+
+/* Modal Close Button */
+.modal-close {
+  background: none;
+  border: none;
+  font-size: 1.5rem;
+  color: var(--text-secondary, #6b7280);
+  cursor: pointer;
+  padding: 0;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+  transition: all 0.2s;
+}
+
+.modal-close:hover {
+  background: var(--hover-color, #f3f4f6);
+  color: var(--text-primary, #1f2937);
 }

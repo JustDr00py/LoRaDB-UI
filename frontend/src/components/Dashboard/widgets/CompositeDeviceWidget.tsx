@@ -7,6 +7,9 @@ import type {
   WidgetData,
   WidgetType,
   MeasurementDefinition,
+  Threshold,
+  StatusCondition,
+  GaugeZone,
 } from '../../../types/widgets';
 import type { Layout } from 'react-grid-layout';
 import { CurrentValueWidget } from './CurrentValueWidget';
@@ -14,6 +17,7 @@ import { TimeSeriesWidget } from './TimeSeriesWidget';
 import { GaugeWidget } from './GaugeWidget';
 import { StatusWidget } from './StatusWidget';
 import { CompositeGridLayout } from './CompositeGridLayout';
+import { MeasurementCustomizationModal } from '../MeasurementCustomizationModal';
 
 interface CompositeDeviceWidgetProps {
   widget: WidgetInstance;
@@ -21,6 +25,7 @@ interface CompositeDeviceWidgetProps {
   template: WidgetTemplate;
   measurementData: Array<{ measurementId: string; data: WidgetData }>;
   onUpdateInnerLayout?: (widgetId: string, newLayout: Layout[]) => void;
+  onUpdateWidget?: (widgetId: string, updates: Partial<WidgetInstance>) => void;
 }
 
 // Generate default grid layout from template structure
@@ -120,6 +125,7 @@ export const CompositeDeviceWidget: React.FC<CompositeDeviceWidgetProps> = ({
   template,
   measurementData,
   onUpdateInnerLayout,
+  onUpdateWidget,
 }) => {
   // Edit mode state
   const [editMode, setEditMode] = useState(false);
@@ -127,21 +133,39 @@ export const CompositeDeviceWidget: React.FC<CompositeDeviceWidgetProps> = ({
     widget.innerLayout || generateDefaultLayout(template, widget)
   );
 
+  // Customization modal state
+  const [customizationModal, setCustomizationModal] = useState<{
+    isOpen: boolean;
+    measurementId: string | null;
+    widgetType: WidgetType | null;
+  }>({
+    isOpen: false,
+    measurementId: null,
+    widgetType: null,
+  });
+
   // Helper function to render a widget by type
   const renderWidgetByType = useCallback(
     (
       type: WidgetType,
       measurement: MeasurementDefinition,
       data: WidgetData,
+      measurementId: string,
       yAxisOverride?: { customYAxisMin?: number; customYAxisMax?: number }
     ): React.ReactNode => {
+      // Get measurement-specific overrides
+      const overrides = widget.sectionOverrides?.[measurementId];
+
       switch (type) {
         case 'time-series':
           return (
             <TimeSeriesWidget
               data={data}
               measurement={measurement}
-              config={measurement.widgets['time-series']}
+              config={{
+                ...measurement.widgets['time-series'],
+                color: overrides?.customColor || measurement.widgets['time-series']?.color,
+              }}
               widget={widget}
               yAxisOverride={yAxisOverride}
             />
@@ -151,7 +175,10 @@ export const CompositeDeviceWidget: React.FC<CompositeDeviceWidgetProps> = ({
             <GaugeWidget
               data={data}
               measurement={measurement}
-              config={measurement.widgets.gauge}
+              config={{
+                ...measurement.widgets.gauge,
+                zones: overrides?.customGaugeZones || measurement.widgets.gauge?.zones,
+              }}
               widget={widget}
               yAxisOverride={yAxisOverride}
             />
@@ -161,11 +188,28 @@ export const CompositeDeviceWidget: React.FC<CompositeDeviceWidgetProps> = ({
             <CurrentValueWidget
               data={data}
               measurement={measurement}
-              config={measurement.widgets['current-value']}
+              config={{
+                ...measurement.widgets['current-value'],
+                thresholds: overrides?.customThresholds || measurement.widgets['current-value']?.thresholds,
+              }}
             />
           );
         case 'status':
-          return <StatusWidget data={data} measurement={measurement} />;
+          return (
+            <StatusWidget
+              data={data}
+              measurement={{
+                ...measurement,
+                widgets: {
+                  ...measurement.widgets,
+                  status: {
+                    ...measurement.widgets.status,
+                    conditions: overrides?.customStatusConditions || measurement.widgets.status?.conditions,
+                  },
+                },
+              }}
+            />
+          );
         default:
           return <div className="widget-error">Unknown widget type: {type}</div>;
       }
@@ -243,10 +287,24 @@ export const CompositeDeviceWidget: React.FC<CompositeDeviceWidgetProps> = ({
                   <span className="inner-widget-label">
                     {measurement.name} - {type}
                   </span>
+                  <button
+                    className="inner-widget-customize-btn"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      e.preventDefault();
+                      handleOpenCustomization(measurementId, type);
+                    }}
+                    onMouseDown={(e) => {
+                      e.stopPropagation();
+                    }}
+                    title="Customize appearance"
+                  >
+                    ✎
+                  </button>
                 </div>
               )}
               <div className="inner-widget-content">
-                {renderWidgetByType(type, measurement, data.data, yAxisOverride)}
+                {renderWidgetByType(type, measurement, data.data, measurementId, yAxisOverride)}
               </div>
             </div>
           );
@@ -275,6 +333,41 @@ export const CompositeDeviceWidget: React.FC<CompositeDeviceWidgetProps> = ({
     [widget.id, onUpdateInnerLayout]
   );
 
+  // Handle opening customization modal
+  const handleOpenCustomization = (measurementId: string, widgetType: WidgetType) => {
+    setCustomizationModal({
+      isOpen: true,
+      measurementId,
+      widgetType,
+    });
+  };
+
+  // Handle saving customization
+  const handleSaveCustomization = (overrides: {
+    customColor?: string;
+    customThresholds?: Threshold[];
+    customStatusConditions?: StatusCondition[];
+    customGaugeZones?: GaugeZone[];
+  }) => {
+    if (!customizationModal.measurementId || !onUpdateWidget) return;
+
+    const updatedOverrides = {
+      ...widget.sectionOverrides,
+      [customizationModal.measurementId]: {
+        ...widget.sectionOverrides?.[customizationModal.measurementId],
+        ...overrides,
+      },
+    };
+
+    onUpdateWidget(widget.id, { sectionOverrides: updatedOverrides });
+    setCustomizationModal({ isOpen: false, measurementId: null, widgetType: null });
+  };
+
+  // Get current measurement for modal
+  const currentMeasurement = customizationModal.measurementId
+    ? deviceType.measurements.find((m) => m.id === customizationModal.measurementId)
+    : undefined;
+
   return (
     <div className="composite-widget">
       {/* Edit Mode Toggle */}
@@ -296,6 +389,24 @@ export const CompositeDeviceWidget: React.FC<CompositeDeviceWidgetProps> = ({
       >
         {gridItems}
       </CompositeGridLayout>
+
+      {/* Customization Modal */}
+      {currentMeasurement && customizationModal.widgetType && (
+        <MeasurementCustomizationModal
+          isOpen={customizationModal.isOpen}
+          onClose={() =>
+            setCustomizationModal({ isOpen: false, measurementId: null, widgetType: null })
+          }
+          onSave={handleSaveCustomization}
+          measurement={currentMeasurement}
+          widgetType={customizationModal.widgetType}
+          currentOverrides={
+            customizationModal.measurementId
+              ? widget.sectionOverrides?.[customizationModal.measurementId]
+              : undefined
+          }
+        />
+      )}
     </div>
   );
 };

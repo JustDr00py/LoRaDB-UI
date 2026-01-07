@@ -11,12 +11,18 @@ export type StatusLevel = 'success' | 'warning' | 'error' | 'info';
 // Condition operators
 export type ConditionOperator = 'lt' | 'lte' | 'gt' | 'gte' | 'eq' | 'between';
 
+// Threshold comparison operators for current value widgets
+export type ThresholdOperator = '<' | '<=' | '>' | '>=' | '=' | 'between';
+
 // Threshold definition for current value widgets
 export interface Threshold {
-  min: number;
-  max: number;
+  operator: ThresholdOperator;
+  value?: number;        // For <, <=, >, >=, = operators
+  min?: number;          // For 'between' operator
+  max?: number;          // For 'between' operator
   color: string;
-  label: string;
+  label: string;         // Default label (e.g., "Low", "Normal", "High")
+  customLabel?: string;  // Optional custom label to override default
 }
 
 // Status condition for status widgets - discriminated union for string/numeric support
@@ -159,6 +165,11 @@ export interface WidgetInstance {
       displayTypes?: WidgetType[]; // Override which visualizations to show
       customYAxisMin?: number;    // Per-measurement Y-axis minimum
       customYAxisMax?: number;    // Per-measurement Y-axis maximum
+      // Widget-specific customizations
+      customColor?: string;       // Override color for time-series and gauge
+      customThresholds?: Threshold[]; // Override thresholds for current-value
+      customStatusConditions?: StatusCondition[]; // Override status conditions
+      customGaugeZones?: GaugeZone[]; // Override gauge zones
     };
   };
   sectionOrder?: string[];        // Custom order of measurement IDs (optional)

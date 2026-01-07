@@ -1,5 +1,5 @@
 import React from 'react';
-import type { WidgetData, CurrentValueWidgetConfig, MeasurementDefinition } from '../../../types/widgets';
+import type { WidgetData, CurrentValueWidgetConfig, MeasurementDefinition, Threshold } from '../../../types/widgets';
 import { formatRelativeTime } from '../../../utils/dateFormatter';
 
 interface CurrentValueWidgetProps {
@@ -7,6 +7,29 @@ interface CurrentValueWidgetProps {
   measurement: MeasurementDefinition;
   config: CurrentValueWidgetConfig;
 }
+
+/**
+ * Evaluate if a value matches a threshold condition
+ */
+const matchesThreshold = (value: number, threshold: Threshold): boolean => {
+  switch (threshold.operator) {
+    case '<':
+      return threshold.value !== undefined && value < threshold.value;
+    case '<=':
+      return threshold.value !== undefined && value <= threshold.value;
+    case '>':
+      return threshold.value !== undefined && value > threshold.value;
+    case '>=':
+      return threshold.value !== undefined && value >= threshold.value;
+    case '=':
+      return threshold.value !== undefined && value === threshold.value;
+    case 'between':
+      return threshold.min !== undefined && threshold.max !== undefined &&
+             value >= threshold.min && value <= threshold.max;
+    default:
+      return false;
+  }
+};
 
 export const CurrentValueWidget: React.FC<CurrentValueWidgetProps> = ({
   data,
@@ -32,11 +55,12 @@ export const CurrentValueWidget: React.FC<CurrentValueWidgetProps> = ({
   if (valueType === 'number' && typeof data.currentValue === 'number') {
     // Assign to local variable to preserve type narrowing
     const currentNumericValue = data.currentValue;
-    const threshold = config.thresholds?.find(
-      (t) => currentNumericValue >= t.min && currentNumericValue < t.max
-    );
+
+    // Find first matching threshold
+    const threshold = config.thresholds?.find((t) => matchesThreshold(currentNumericValue, t));
+
     color = threshold?.color || '#6b7280';
-    label = threshold?.label;
+    label = threshold?.customLabel || threshold?.label;
 
     // Safe to access numeric properties
     displayUnit = 'unit' in data ? data.unit : measurement.unit;

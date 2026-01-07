@@ -16,6 +16,7 @@ interface DashboardGridProps {
   onDeleteWidget: (id: string) => void;
   onEditWidget: (widget: WidgetInstance) => void;
   onUpdateInnerLayout?: (widgetId: string, newLayout: Layout[]) => void;
+  onUpdateWidget?: (widgetId: string, updates: Partial<WidgetInstance>) => void;
   getMeasurement: (deviceType: string, measurementId: string) => MeasurementDefinition | undefined;
   getDeviceType: (deviceType: string) => DeviceTypeDefinition | undefined;
 }
@@ -29,6 +30,7 @@ export const DashboardGrid: React.FC<DashboardGridProps> = ({
   onDeleteWidget,
   onEditWidget,
   onUpdateInnerLayout,
+  onUpdateWidget,
   getMeasurement,
   getDeviceType,
 }) => {
@@ -68,6 +70,7 @@ export const DashboardGrid: React.FC<DashboardGridProps> = ({
               onDelete={() => onDeleteWidget(widget.id)}
               onEdit={() => onEditWidget(widget)}
               onUpdateInnerLayout={onUpdateInnerLayout}
+              onUpdateWidget={onUpdateWidget}
             />
           </div>
         );

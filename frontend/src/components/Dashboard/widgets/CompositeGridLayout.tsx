@@ -32,6 +32,7 @@ export const CompositeGridLayout: React.FC<CompositeGridLayoutProps> = ({
         isDraggable={editMode}
         isResizable={editMode}
         draggableHandle=".inner-widget-header"
+        draggableCancel=".inner-widget-customize-btn"
         resizeHandles={['se']}
         compactType="vertical"
         preventCollision={false}

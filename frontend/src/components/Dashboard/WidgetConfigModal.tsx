@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { v4 as uuidv4 } from 'uuid';
-import type { DeviceTypeDefinition, WidgetInstance, WidgetType } from '../../types/widgets';
+import type { DeviceTypeDefinition, WidgetInstance, WidgetType, Threshold, ThresholdOperator } from '../../types/widgets';
 import { getDevices } from '../../api/endpoints';
 
 interface WidgetConfigModalProps {
@@ -43,6 +43,7 @@ export const WidgetConfigModal: React.FC<WidgetConfigModalProps> = ({
     [measurementId: string]: { min?: string; max?: string };
   }>({});
   const [advancedSettingsExpanded, setAdvancedSettingsExpanded] = useState(false);
+  const [thresholds, setThresholds] = useState<Threshold[]>([]);
 
   // Fetch devices for dropdown
   const { data: devicesData } = useQuery({
@@ -68,6 +69,7 @@ export const WidgetConfigModal: React.FC<WidgetConfigModalProps> = ({
       setCustomYAxisMin('');
       setCustomYAxisMax('');
       setSectionYAxis({});
+      setThresholds([]);
     } else if (editWidget) {
       // Populate fields when editing
       setDevEui(editWidget.devEui);
@@ -104,6 +106,13 @@ export const WidgetConfigModal: React.FC<WidgetConfigModalProps> = ({
       setConvertTo(editWidget.conversion?.convertTo || 'fahrenheit');
       setCustomYAxisMin(editWidget.customYAxisMin !== undefined ? String(editWidget.customYAxisMin) : '');
       setCustomYAxisMax(editWidget.customYAxisMax !== undefined ? String(editWidget.customYAxisMax) : '');
+
+      // Load thresholds from config if available
+      if (editWidget.config?.widgets?.['current-value']?.thresholds) {
+        setThresholds(editWidget.config.widgets['current-value'].thresholds);
+      } else {
+        setThresholds([]);
+      }
     }
   }, [isOpen, editWidget]);
 
@@ -229,6 +238,18 @@ export const WidgetConfigModal: React.FC<WidgetConfigModalProps> = ({
         return;
       }
 
+      // Build config with thresholds for current-value widgets
+      const config = widgetType === 'current-value' && thresholds.length > 0
+        ? {
+            widgets: {
+              'current-value': {
+                enabled: true,
+                thresholds,
+              },
+            },
+          }
+        : undefined;
+
       widget = {
         id: editWidget ? editWidget.id : uuidv4(),
         devEui,
@@ -239,6 +260,7 @@ export const WidgetConfigModal: React.FC<WidgetConfigModalProps> = ({
         conversion: conversionEnabled ? { enabled: true, convertTo } : undefined,
         customYAxisMin: customYAxisMin !== '' ? Number(customYAxisMin) : undefined,
         customYAxisMax: customYAxisMax !== '' ? Number(customYAxisMax) : undefined,
+        config: config as any,
       };
     }
 
@@ -563,6 +585,168 @@ export const WidgetConfigModal: React.FC<WidgetConfigModalProps> = ({
                   </option>
                 ))}
               </select>
+            </div>
+          )}
+
+          {/* Threshold Configuration (Current Value Widgets Only) */}
+          {widgetMode === 'individual' && widgetType === 'current-value' && (
+            <div className="form-group">
+              <label>Color Thresholds (optional)</label>
+              <div className="help-text" style={{ marginBottom: '10px' }}>
+                Configure color-coded thresholds based on measurement values
+              </div>
+
+              {thresholds.map((threshold, index) => (
+                <div key={index} style={{
+                  display: 'grid',
+                  gridTemplateColumns: '100px 120px 80px 1fr 40px',
+                  gap: '8px',
+                  marginBottom: '8px',
+                  alignItems: 'center',
+                  padding: '8px',
+                  background: '#f9fafb',
+                  borderRadius: '4px'
+                }}>
+                  <select
+                    className="form-control"
+                    value={threshold.operator}
+                    onChange={(e) => {
+                      const newThresholds = [...thresholds];
+                      newThresholds[index] = { ...threshold, operator: e.target.value as ThresholdOperator };
+                      setThresholds(newThresholds);
+                    }}
+                  >
+                    <option value="<">{'<'} Less than</option>
+                    <option value="<=">{'<='} Less or equal</option>
+                    <option value=">">{'>'} Greater than</option>
+                    <option value=">=">{'>='} Greater or equal</option>
+                    <option value="=">= Equal to</option>
+                    <option value="between">Between</option>
+                  </select>
+
+                  {threshold.operator === 'between' ? (
+                    <>
+                      <input
+                        type="number"
+                        className="form-control"
+                        placeholder="Min"
+                        value={threshold.min ?? ''}
+                        onChange={(e) => {
+                          const newThresholds = [...thresholds];
+                          newThresholds[index] = { ...threshold, min: e.target.value ? Number(e.target.value) : undefined };
+                          setThresholds(newThresholds);
+                        }}
+                        step="any"
+                      />
+                      <input
+                        type="number"
+                        className="form-control"
+                        placeholder="Max"
+                        value={threshold.max ?? ''}
+                        onChange={(e) => {
+                          const newThresholds = [...thresholds];
+                          newThresholds[index] = { ...threshold, max: e.target.value ? Number(e.target.value) : undefined };
+                          setThresholds(newThresholds);
+                        }}
+                        step="any"
+                        style={{ gridColumn: '3' }}
+                      />
+                    </>
+                  ) : (
+                    <input
+                      type="number"
+                      className="form-control"
+                      placeholder="Value"
+                      value={threshold.value ?? ''}
+                      onChange={(e) => {
+                        const newThresholds = [...thresholds];
+                        newThresholds[index] = { ...threshold, value: e.target.value ? Number(e.target.value) : undefined };
+                        setThresholds(newThresholds);
+                      }}
+                      step="any"
+                      style={{ gridColumn: '2 / 4' }}
+                    />
+                  )}
+
+                  <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                    <input
+                      type="color"
+                      value={threshold.color}
+                      onChange={(e) => {
+                        const newThresholds = [...thresholds];
+                        newThresholds[index] = { ...threshold, color: e.target.value };
+                        setThresholds(newThresholds);
+                      }}
+                      style={{ width: '40px', height: '32px', border: '1px solid #ccc', borderRadius: '4px' }}
+                    />
+                    <input
+                      type="text"
+                      className="form-control"
+                      placeholder="Label (e.g., Low)"
+                      value={threshold.label}
+                      onChange={(e) => {
+                        const newThresholds = [...thresholds];
+                        newThresholds[index] = { ...threshold, label: e.target.value };
+                        setThresholds(newThresholds);
+                      }}
+                      style={{ minWidth: '120px' }}
+                    />
+                    <input
+                      type="text"
+                      className="form-control"
+                      placeholder="Custom label (optional)"
+                      value={threshold.customLabel ?? ''}
+                      onChange={(e) => {
+                        const newThresholds = [...thresholds];
+                        newThresholds[index] = { ...threshold, customLabel: e.target.value || undefined };
+                        setThresholds(newThresholds);
+                      }}
+                      style={{ minWidth: '150px' }}
+                    />
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const newThresholds = thresholds.filter((_, i) => i !== index);
+                      setThresholds(newThresholds);
+                    }}
+                    style={{
+                      background: '#ef4444',
+                      color: 'white',
+                      border: 'none',
+                      borderRadius: '4px',
+                      padding: '6px 10px',
+                      cursor: 'pointer',
+                      fontSize: '14px'
+                    }}
+                  >
+                    ×
+                  </button>
+                </div>
+              ))}
+
+              <button
+                type="button"
+                onClick={() => {
+                  setThresholds([
+                    ...thresholds,
+                    { operator: '<', value: 0, color: '#6b7280', label: 'Threshold' }
+                  ]);
+                }}
+                style={{
+                  background: '#2563eb',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '4px',
+                  padding: '8px 16px',
+                  cursor: 'pointer',
+                  fontSize: '14px',
+                  marginTop: '8px'
+                }}
+              >
+                + Add Threshold
+              </button>
             </div>
           )}
 

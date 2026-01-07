@@ -18,6 +18,7 @@ interface WidgetContainerProps {
   onDelete: () => void;
   onEdit: () => void;
   onUpdateInnerLayout?: (widgetId: string, newLayout: Layout[]) => void;
+  onUpdateWidget?: (widgetId: string, updates: Partial<WidgetInstance>) => void;
 }
 
 export const WidgetContainer: React.FC<WidgetContainerProps> = ({
@@ -29,6 +30,7 @@ export const WidgetContainer: React.FC<WidgetContainerProps> = ({
   onDelete,
   onEdit,
   onUpdateInnerLayout,
+  onUpdateWidget,
 }) => {
   // Determine if this is a composite widget or legacy widget
   const isComposite = !!widget.templateId && !!deviceType;
@@ -95,6 +97,7 @@ export const WidgetContainer: React.FC<WidgetContainerProps> = ({
                 template={template}
                 measurementData={data}
                 onUpdateInnerLayout={onUpdateInnerLayout}
+                onUpdateWidget={onUpdateWidget}
               />
             ) : (
               measurement && !Array.isArray(data) && (
