@@ -1,4 +1,3 @@
-import React from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { AuthProvider } from './context/AuthContext';
@@ -26,24 +25,6 @@ const queryClient = new QueryClient({
   },
 });
 
-const Home: React.FC = () => (
-  <div>
-    <div className="header">
-      <h1>Dashboard</h1>
-    </div>
-    <div className="card">
-      <div className="card-header">Welcome to LoRaDB UI</div>
-      <p>Use the navigation menu to:</p>
-      <ul style={{ marginLeft: '20px', marginTop: '10px' }}>
-        <li>View and manage devices</li>
-        <li>Execute queries against LoRaDB</li>
-        <li>Create and manage API tokens for long-lived access</li>
-        <li>Configure data retention policies to automatically delete old data</li>
-      </ul>
-    </div>
-  </div>
-);
-
 function App() {
   return (
     <ErrorBoundary>
@@ -56,13 +37,12 @@ function App() {
                 <Route path="/servers" element={<ServerWelcome />} />
                 <Route path="/servers/manage" element={<ServerManagement />} />
                 <Route path="/" element={<Dashboard />}>
-                  <Route index element={<Home />} />
+                  <Route index element={<DashboardPage />} />
                   <Route path="devices" element={<DeviceList />} />
                   <Route path="query" element={<QueryInterface />} />
                   <Route path="tokens" element={<TokenManagement />} />
                   <Route path="retention" element={<RetentionPolicies />} />
                   <Route path="analytics" element={<DeviceKPI />} />
-                  <Route path="dashboard-widgets" element={<DashboardPage />} />
                   <Route path="settings" element={<Settings />} />
                 </Route>
                 <Route path="*" element={<Navigate to="/" replace />} />
