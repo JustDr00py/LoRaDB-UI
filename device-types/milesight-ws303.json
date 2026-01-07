@@ -11,14 +11,11 @@
       "name": "Leak Status",
       "unit": "",
       "decimals": 0,
+      "valueType": "string",
       "defaultWidget": "status",
       "widgets": {
         "current-value": {
-          "enabled": true,
-          "thresholds": [
-            { "min": 0, "max": 1, "color": "#10b981", "label": "Normal" },
-            { "min": 1, "max": 2, "color": "#ef4444", "label": "Leak Detected" }
-          ]
+          "enabled": false
         },
         "time-series": {
           "enabled": false
@@ -29,9 +26,9 @@
         "status": {
           "enabled": true,
           "conditions": [
-            { "operator": "eq", "value": "normal", "status": "success", "label": "Normal - No Leak" },
-            { "operator": "eq", "value": "leak", "status": "error", "label": "Leak Detected!" },
-            { "operator": "eq", "value": "alarm", "status": "error", "label": "Alarm!" }
+            { "operator": "eq", "value": "normal", "status": "success", "label": "Normal - No Leak", "valueType": "string" },
+            { "operator": "eq", "value": "leak", "status": "error", "label": "Leak Detected!", "valueType": "string" },
+            { "operator": "eq", "value": "alarm", "status": "error", "label": "Alarm!", "valueType": "string" }
           ]
         }
       }
