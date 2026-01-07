@@ -1350,7 +1350,7 @@ pre {
 }
 
 .inner-widget-header::before {
-  content: '⋮⋮';
+  content: '⋮';
   color: var(--text-secondary, #6b7280);
   font-weight: bold;
 }

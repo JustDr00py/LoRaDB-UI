@@ -1,7 +1,9 @@
 import React from 'react';
-import GridLayout, { Layout } from 'react-grid-layout';
+import GridLayout, { Layout, WidthProvider } from 'react-grid-layout';
 import 'react-grid-layout/css/styles.css';
 import 'react-resizable/css/styles.css';
+
+const ResponsiveGridLayout = WidthProvider(GridLayout);
 
 interface CompositeGridLayoutProps {
   children: React.ReactElement[];  // Grid items
@@ -22,12 +24,11 @@ export const CompositeGridLayout: React.FC<CompositeGridLayoutProps> = ({
 }) => {
   return (
     <div className="composite-grid-container">
-      <GridLayout
+      <ResponsiveGridLayout
         className="composite-inner-grid"
         layout={layout}
         cols={cols}
         rowHeight={rowHeight}
-        width={1200}  // Will be responsive via container
         onLayoutChange={onLayoutChange}
         isDraggable={editMode}
         isResizable={editMode}
@@ -40,7 +41,7 @@ export const CompositeGridLayout: React.FC<CompositeGridLayoutProps> = ({
         containerPadding={[16, 16]}
       >
         {children}
-      </GridLayout>
+      </ResponsiveGridLayout>
     </div>
   );
 };
