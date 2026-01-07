@@ -1,5 +1,6 @@
 import { Router, Request, Response } from 'express';
 import jwt from 'jsonwebtoken';
+import crypto from 'crypto';
 import { config } from '../config/env';
 import { serverRepository } from '../db/repositories/serverRepository';
 import { masterPasswordLimiter } from '../middleware/rateLimiter';
@@ -131,8 +132,21 @@ router.post('/verify-master-password', masterPasswordLimiter, async (req: Reques
       return;
     }
 
-    // Verify password (simple comparison)
-    const isValid = password === config.masterPassword;
+    // Verify password (timing-safe comparison to prevent timing attacks)
+    // First check if lengths match (constant-time if possible)
+    const providedPassword = Buffer.from(password, 'utf8');
+    const storedPassword = Buffer.from(config.masterPassword, 'utf8');
+
+    let isValid = false;
+    if (providedPassword.length === storedPassword.length) {
+      try {
+        // Use timing-safe comparison
+        isValid = crypto.timingSafeEqual(providedPassword, storedPassword);
+      } catch (error) {
+        // timingSafeEqual throws if buffers are different lengths (shouldn't happen due to check above)
+        isValid = false;
+      }
+    }
 
     if (!isValid) {
       res.status(401).json({

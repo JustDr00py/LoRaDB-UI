@@ -5,6 +5,13 @@ import { serverContextMiddleware } from '../middleware/serverContext';
 const router = Router();
 
 /**
+ * Helper function to validate DevEUI format (16 hex characters)
+ */
+const isValidDevEUI = (devEui: string): boolean => {
+  return /^[0-9A-Fa-f]{16}$/.test(devEui);
+};
+
+/**
  * Helper function to handle errors from LoRaDB API
  */
 const handleLoraDbError = (error: unknown, res: Response): void => {
@@ -108,6 +115,16 @@ router.get('/devices', async (req: Request, res: Response) => {
 router.get('/devices/:dev_eui', async (req: Request, res: Response) => {
   try {
     const { dev_eui } = req.params;
+
+    // Validate DevEUI format (security: prevent URL injection)
+    if (!isValidDevEUI(dev_eui)) {
+      res.status(400).json({
+        error: 'ValidationError',
+        message: 'Invalid DevEUI format. Must be 16 hexadecimal characters',
+      });
+      return;
+    }
+
     const response = await req.loradbClient!.get(`/devices/${dev_eui}`);
     res.json(response.data);
   } catch (error) {
