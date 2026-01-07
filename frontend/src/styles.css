@@ -485,8 +485,10 @@ pre {
 
 /* Dashboard Page */
 .dashboard-page {
-  max-width: 1400px;
-  margin: 0 auto;
+  width: 100%;
+  max-width: 100%;
+  margin: 0;
+  padding: 0;
 }
 
 .dashboard-header {
@@ -494,6 +496,7 @@ pre {
   justify-content: space-between;
   align-items: center;
   margin-bottom: 20px;
+  padding: 0 20px;
 }
 
 .dashboard-actions {
@@ -504,6 +507,7 @@ pre {
 /* Time Range Control */
 .time-range-control {
   margin-bottom: 20px;
+  padding: 0 20px;
 }
 
 .control-grid {
@@ -546,13 +550,23 @@ pre {
 /* Dashboard Grid */
 .dashboard-grid {
   position: relative;
+  width: 100%;
+  min-height: 100px;
+  padding: 0 20px;
+  box-sizing: border-box;
+}
+
+.react-grid-item {
+  box-sizing: border-box;
 }
 
 .grid-item {
   background: white;
   border-radius: 8px;
   overflow: hidden;
-  height: 100% !important;
+  width: 100%;
+  height: 100%;
+  box-sizing: border-box;
 }
 
 /* Widget Container */
@@ -967,7 +981,7 @@ pre {
 .empty-state {
   text-align: center;
   padding: 60px 40px;
-  margin-top: 40px;
+  margin: 40px 20px 0;
 }
 
 .empty-icon {
@@ -1138,20 +1152,23 @@ pre {
 /* React Grid Layout Overrides */
 .react-grid-layout {
   position: relative;
+  width: 100%;
 }
 
 .react-grid-item {
   transition: all 200ms ease;
-  transition-property: left, top;
+  transition-property: left, top, width, height;
+  box-sizing: border-box;
 }
 
 .react-grid-item.cssTransforms {
-  transition-property: transform;
+  transition-property: transform, width, height;
 }
 
 .react-grid-item.resizing {
   z-index: 100;
   will-change: width, height;
+  transition: none;
 }
 
 .react-grid-item.react-draggable-dragging {
@@ -1166,6 +1183,12 @@ pre {
   transition-duration: 100ms;
   z-index: 2;
   border-radius: 8px;
+}
+
+.react-grid-item > .react-resizable-handle {
+  position: absolute;
+  width: 20px;
+  height: 20px;
 }
 
 .react-resizable-handle {

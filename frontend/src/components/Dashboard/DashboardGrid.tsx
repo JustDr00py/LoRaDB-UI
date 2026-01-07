@@ -1,9 +1,11 @@
 import React from 'react';
-import GridLayout, { Layout } from 'react-grid-layout';
+import GridLayout, { Layout, WidthProvider } from 'react-grid-layout';
 import 'react-grid-layout/css/styles.css';
 import 'react-resizable/css/styles.css';
 import type { WidgetInstance, MeasurementDefinition, DeviceTypeDefinition } from '../../types/widgets';
 import { WidgetContainer } from './WidgetContainer';
+
+const ResponsiveGridLayout = WidthProvider(GridLayout);
 
 interface DashboardGridProps {
   widgets: WidgetInstance[];
@@ -31,18 +33,20 @@ export const DashboardGrid: React.FC<DashboardGridProps> = ({
   getDeviceType,
 }) => {
   return (
-    <GridLayout
+    <ResponsiveGridLayout
       className="dashboard-grid"
       layout={layouts.lg}
       cols={12}
       rowHeight={60}
-      width={1200}
       onLayoutChange={onLayoutChange}
       draggableHandle=".widget-header"
       draggableCancel=".widget-actions"
       resizeHandles={['se']}
       compactType="vertical"
       preventCollision={false}
+      margin={[10, 10]}
+      containerPadding={[0, 0]}
+      useCSSTransforms={true}
     >
       {widgets.map((widget) => {
         const measurement = widget.deviceType && widget.measurementId
@@ -68,6 +72,6 @@ export const DashboardGrid: React.FC<DashboardGridProps> = ({
           </div>
         );
       })}
-    </GridLayout>
+    </ResponsiveGridLayout>
   );
 };
