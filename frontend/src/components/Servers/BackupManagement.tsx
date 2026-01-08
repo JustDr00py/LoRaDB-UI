@@ -45,12 +45,8 @@ const BackupManagement: React.FC = () => {
     try {
       setExporting(true);
 
-      // Get dashboard layout from localStorage
-      const dashboardLayout = localStorage.getItem('loradb-dashboard-layout');
-      const dashboards = dashboardLayout ? JSON.parse(dashboardLayout) : null;
-
-      // Export backup with dashboard data
-      const backup = await exportBackup(true, false, dashboards);
+      // Export backup (dashboards are now exported from database automatically)
+      const backup = await exportBackup(true, false);
       downloadBackup(backup);
       alert('Backup exported successfully!');
     } catch (error: any) {
@@ -103,20 +99,11 @@ const BackupManagement: React.FC = () => {
       setShowImportModal(false);
       setShowResultModal(true);
 
-      // Restore dashboard layout to localStorage if present in backup
-      if (importFile.data.dashboards) {
-        localStorage.setItem('loradb-dashboard-layout', JSON.stringify(importFile.data.dashboards));
-        console.log('✅ Dashboard layout restored from backup');
-      }
-
-      // Restore settings to localStorage if present in backup
-      if (importFile.data.settings) {
-        // Settings restoration can be implemented here when settings are added
-        console.log('✅ Settings restored from backup');
-      }
+      // Dashboards are now restored to database automatically by backend
+      console.log(`✅ Import completed: ${result.servers.imported} servers, ${result.dashboards.imported} dashboards`);
 
       // Reload page after import to apply all changes
-      if (result.servers.imported > 0 || importFile.data.dashboards) {
+      if (result.servers.imported > 0 || result.dashboards.imported > 0) {
         window.location.reload();
       }
     } catch (error: any) {
@@ -309,9 +296,13 @@ const BackupManagement: React.FC = () => {
                 <strong>Device Types:</strong> {importFile.data.deviceTypes?.length || 0}
               </p>
               <p>
-                <strong>Dashboard Widgets:</strong>{' '}
-                {importFile.data.dashboards?.widgets?.length || 0}
+                <strong>Dashboards:</strong> {importFile.data.dashboards?.length || 0}
               </p>
+              {importFile.data.dashboards && importFile.data.dashboards.length > 0 && (
+                <p style={{ fontSize: '12px', color: 'var(--text-secondary)', marginLeft: '20px' }}>
+                  Total widgets: {importFile.data.dashboards.reduce((total: number, d: any) => total + (d.widgets?.length || 0), 0)}
+                </p>
+              )}
             </div>
 
             <div style={{ marginBottom: '20px' }}>
@@ -428,6 +419,28 @@ const BackupManagement: React.FC = () => {
                   <strong>Errors:</strong>
                   <ul style={{ margin: '8px 0', paddingLeft: '20px' }}>
                     {importResult.servers.errors.map((error, index) => (
+                      <li key={index} style={{ color: 'var(--color-danger)' }}>
+                        {error}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+            </div>
+
+            <div style={{ marginBottom: '20px' }}>
+              <h4 style={{ marginBottom: '10px' }}>Dashboards:</h4>
+              <p>
+                <strong>Imported:</strong> {importResult.dashboards.imported}
+              </p>
+              <p>
+                <strong>Skipped:</strong> {importResult.dashboards.skipped}
+              </p>
+              {importResult.dashboards.errors.length > 0 && (
+                <div>
+                  <strong>Errors:</strong>
+                  <ul style={{ margin: '8px 0', paddingLeft: '20px' }}>
+                    {importResult.dashboards.errors.map((error, index) => (
                       <li key={index} style={{ color: 'var(--color-danger)' }}>
                         {error}
                       </li>

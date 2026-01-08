@@ -1,28 +1,128 @@
 import { useState, useEffect, useCallback } from 'react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import type { Layout } from 'react-grid-layout';
 import type { DashboardLayout, WidgetInstance } from '../types/widgets';
 import {
-  getOrCreateDashboardLayout,
-  saveDashboardLayout,
+  getDefaultDashboard,
+  updateDashboard,
+  migrateDashboard,
+} from '../api/endpoints';
+import {
+  loadDashboardLayout,
   clearDashboardLayout,
+  getDefaultLayout,
 } from '../utils/dashboardStorage';
 
 /**
  * Hook to manage dashboard layout state and persistence
+ * Now uses API instead of localStorage
  */
 export function useDashboardLayout() {
-  const [layout, setLayout] = useState<DashboardLayout>(() => getOrCreateDashboardLayout());
+  const queryClient = useQueryClient();
+  const [localLayout, setLocalLayout] = useState<DashboardLayout>(() => getDefaultLayout());
+  const [migrationAttempted, setMigrationAttempted] = useState(false);
 
-  // Auto-save to localStorage whenever layout changes
+  // Fetch default dashboard from API
+  const { data: dashboardData, isLoading, error } = useQuery({
+    queryKey: ['dashboard', 'default'],
+    queryFn: getDefaultDashboard,
+    staleTime: 30000, // Consider data fresh for 30 seconds
+    retry: 1,
+  });
+
+  // Mutation for updating dashboard
+  const updateMutation = useMutation({
+    mutationFn: async (layout: DashboardLayout) => {
+      if (!dashboardData?.id) {
+        throw new Error('No dashboard ID available');
+      }
+      return updateDashboard(dashboardData.id, {
+        timeRange: layout.timeRange,
+        autoRefresh: layout.autoRefresh,
+        refreshInterval: layout.refreshInterval,
+        widgets: layout.widgets,
+        layouts: layout.layouts,
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['dashboard'] });
+    },
+  });
+
+  // Convert API dashboard to DashboardLayout format
   useEffect(() => {
-    saveDashboardLayout(layout);
-  }, [layout]);
+    if (dashboardData) {
+      setLocalLayout({
+        version: dashboardData.version,
+        timeRange: dashboardData.timeRange,
+        autoRefresh: dashboardData.autoRefresh,
+        refreshInterval: dashboardData.refreshInterval,
+        widgets: dashboardData.widgets,
+        layouts: dashboardData.layouts,
+      });
+    }
+  }, [dashboardData]);
+
+  // One-time migration from localStorage to database
+  useEffect(() => {
+    const attemptMigration = async () => {
+      if (migrationAttempted || isLoading || !dashboardData) {
+        return;
+      }
+
+      // Check if localStorage has dashboard data
+      const localStorageData = loadDashboardLayout();
+      if (!localStorageData || localStorageData.widgets.length === 0) {
+        setMigrationAttempted(true);
+        return;
+      }
+
+      // Check if database dashboard is empty
+      if (dashboardData.widgets.length === 0) {
+        console.log('📦 Migrating dashboard from localStorage to database...');
+        try {
+          await migrateDashboard({ dashboard: localStorageData });
+          console.log('✅ Dashboard migrated successfully');
+          // Clear localStorage after successful migration
+          clearDashboardLayout();
+          // Refetch to get migrated data
+          queryClient.invalidateQueries({ queryKey: ['dashboard'] });
+        } catch (error) {
+          console.error('❌ Dashboard migration failed:', error);
+        }
+      }
+
+      setMigrationAttempted(true);
+    };
+
+    attemptMigration();
+  }, [dashboardData, isLoading, migrationAttempted, queryClient]);
+
+  // Debounced save to API
+  const saveToAPI = useCallback(
+    (layout: DashboardLayout) => {
+      if (!dashboardData?.id) {
+        return;
+      }
+      updateMutation.mutate(layout);
+    },
+    [dashboardData?.id, updateMutation]
+  );
+
+  // Debounce save - only save after user stops making changes
+  useEffect(() => {
+    const timeoutId = setTimeout(() => {
+      saveToAPI(localLayout);
+    }, 1000); // Save 1 second after last change
+
+    return () => clearTimeout(timeoutId);
+  }, [localLayout, saveToAPI]);
 
   /**
    * Add a new widget to the dashboard
    */
   const addWidget = useCallback((widget: WidgetInstance) => {
-    setLayout((prev) => {
+    setLocalLayout((prev) => {
       // Calculate position for new widget (simple stacking)
       const existingWidgets = prev.layouts.lg;
       const maxY = existingWidgets.length > 0
@@ -65,7 +165,7 @@ export function useDashboardLayout() {
    * Update an existing widget
    */
   const updateWidget = useCallback((id: string, updates: Partial<WidgetInstance>) => {
-    setLayout((prev) => ({
+    setLocalLayout((prev) => ({
       ...prev,
       widgets: prev.widgets.map((w) => (w.id === id ? { ...w, ...updates } : w)),
     }));
@@ -75,7 +175,7 @@ export function useDashboardLayout() {
    * Delete a widget
    */
   const deleteWidget = useCallback((id: string) => {
-    setLayout((prev) => ({
+    setLocalLayout((prev) => ({
       ...prev,
       widgets: prev.widgets.filter((w) => w.id !== id),
       layouts: {
@@ -89,7 +189,7 @@ export function useDashboardLayout() {
    * Update grid layout (from react-grid-layout)
    */
   const updateLayout = useCallback((newLayout: Layout[]) => {
-    setLayout((prev) => ({
+    setLocalLayout((prev) => ({
       ...prev,
       layouts: {
         ...prev.layouts,
@@ -102,45 +202,48 @@ export function useDashboardLayout() {
    * Set global time range
    */
   const setTimeRange = useCallback((timeRange: string) => {
-    setLayout((prev) => ({ ...prev, timeRange }));
+    setLocalLayout((prev) => ({ ...prev, timeRange }));
   }, []);
 
   /**
    * Set auto-refresh enabled
    */
   const setAutoRefresh = useCallback((autoRefresh: boolean) => {
-    setLayout((prev) => ({ ...prev, autoRefresh }));
+    setLocalLayout((prev) => ({ ...prev, autoRefresh }));
   }, []);
 
   /**
    * Set refresh interval (seconds)
    */
   const setRefreshInterval = useCallback((refreshInterval: number) => {
-    setLayout((prev) => ({ ...prev, refreshInterval }));
+    setLocalLayout((prev) => ({ ...prev, refreshInterval }));
   }, []);
 
   /**
    * Clear all widgets and reset to default
    */
   const resetDashboard = useCallback(() => {
-    clearDashboardLayout();
-    setLayout(getOrCreateDashboardLayout());
+    const defaultLayout = getDefaultLayout();
+    setLocalLayout(defaultLayout);
   }, []);
 
   /**
    * Load a dashboard layout (for import)
    */
   const loadLayout = useCallback((newLayout: DashboardLayout) => {
-    setLayout(newLayout);
+    setLocalLayout(newLayout);
   }, []);
 
   return {
     // State
-    widgets: layout.widgets,
-    layouts: layout.layouts,
-    timeRange: layout.timeRange,
-    autoRefresh: layout.autoRefresh,
-    refreshInterval: layout.refreshInterval,
+    widgets: localLayout.widgets,
+    layouts: localLayout.layouts,
+    timeRange: localLayout.timeRange,
+    autoRefresh: localLayout.autoRefresh,
+    refreshInterval: localLayout.refreshInterval,
+    isLoading,
+    error,
+    isSaving: updateMutation.isPending,
 
     // Actions
     addWidget,
@@ -154,6 +257,7 @@ export function useDashboardLayout() {
     loadLayout,
 
     // Full layout for export
-    layout,
+    layout: localLayout,
+    dashboardId: dashboardData?.id,
   };
 }
