@@ -174,8 +174,12 @@ export interface WidgetInstance {
   };
   sectionOrder?: string[];        // Custom order of measurement IDs (optional)
 
-  // NEW: Inner grid layout for draggable measurements
-  innerLayout?: Layout[];         // React-grid-layout positions for inner widgets
+  // NEW: Inner grid layout for draggable measurements (responsive)
+  innerLayout?: {
+    lg: Layout[];
+    md?: Layout[];
+    sm?: Layout[];
+  };
   innerLayoutLocked?: boolean;    // Lock/unlock edit mode default state
 
   // Shared fields

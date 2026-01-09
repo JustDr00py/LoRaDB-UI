@@ -17,7 +17,7 @@ interface WidgetContainerProps {
   refreshInterval?: number;
   onDelete: () => void;
   onEdit: () => void;
-  onUpdateInnerLayout?: (widgetId: string, newLayout: Layout[]) => void;
+  onUpdateInnerLayout?: (widgetId: string, newLayout: { lg: Layout[]; md?: Layout[]; sm?: Layout[] }) => void;
   onUpdateWidget?: (widgetId: string, updates: Partial<WidgetInstance>) => void;
 }
 

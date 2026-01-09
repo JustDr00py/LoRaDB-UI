@@ -15,7 +15,7 @@ interface DashboardGridProps {
   onLayoutChange: (layout: Layout[], layouts: Layouts) => void;
   onDeleteWidget: (id: string) => void;
   onEditWidget: (widget: WidgetInstance) => void;
-  onUpdateInnerLayout?: (widgetId: string, newLayout: Layout[]) => void;
+  onUpdateInnerLayout?: (widgetId: string, newLayout: { lg: Layout[]; md?: Layout[]; sm?: Layout[] }) => void;
   onUpdateWidget?: (widgetId: string, updates: Partial<WidgetInstance>) => void;
   getMeasurement: (deviceType: string, measurementId: string) => MeasurementDefinition | undefined;
   getDeviceType: (deviceType: string) => DeviceTypeDefinition | undefined;
