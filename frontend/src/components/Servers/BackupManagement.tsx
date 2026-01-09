@@ -124,6 +124,25 @@ const BackupManagement: React.FC = () => {
     }
   };
 
+  const handleRestoreBackup = async (filename: string) => {
+    try {
+      const backup = await downloadAutomaticBackup(filename);
+
+      // Validate backup file
+      const validation = validateBackupFile(backup);
+      if (!validation.valid) {
+        alert(`Invalid backup file: ${validation.error}`);
+        return;
+      }
+
+      setImportFile(backup);
+      setShowImportModal(true);
+    } catch (error: any) {
+      console.error('Restore failed:', error);
+      alert(`Restore failed: ${error.response?.data?.message || error.message}`);
+    }
+  };
+
   const handleDeleteBackup = async (filename: string) => {
     if (!confirm(`Are you sure you want to delete ${filename}?`)) {
       return;
@@ -178,6 +197,7 @@ const BackupManagement: React.FC = () => {
         <ul style={{ margin: 0, paddingLeft: '20px', lineHeight: '1.6' }}>
           <li>Manual exports include: servers, dashboards, device types</li>
           <li>Automatic backups (daily at 2 AM) include: servers, device types only (no dashboards)</li>
+          <li>Click <strong>Restore</strong> on any automatic backup to restore it directly</li>
           <li>API keys remain encrypted in backups - you need server passwords to use restored servers</li>
           <li><strong>Merge:</strong> Adds new servers without deleting existing ones (skips duplicates)</li>
           <li><strong>Replace:</strong> Deletes all servers and imports from backup</li>
@@ -216,6 +236,20 @@ const BackupManagement: React.FC = () => {
                   </div>
                 </div>
                 <div style={{ display: 'flex', gap: '8px' }}>
+                  <button
+                    onClick={() => handleRestoreBackup(backup.filename)}
+                    style={{
+                      padding: '6px 12px',
+                      fontSize: '14px',
+                      background: '#28a745',
+                      color: 'white',
+                      border: 'none',
+                      borderRadius: '4px',
+                      cursor: 'pointer',
+                    }}
+                  >
+                    Restore
+                  </button>
                   <button
                     onClick={() => handleDownloadBackup(backup.filename)}
                     style={{

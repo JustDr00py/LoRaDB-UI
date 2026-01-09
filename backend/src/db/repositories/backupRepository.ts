@@ -348,7 +348,17 @@ class BackupRepository {
 
           // Extract timestamp from filename: backup-automatic-YYYY-MM-DD-HHmmss.json
           const match = file.match(/backup-automatic-(.+)\.json$/);
-          const timestamp = match ? match[1].replace(/-(\d{6})$/, 'T$1') : '';
+          let timestamp = '';
+          if (match) {
+            // Convert YYYY-MM-DD-HHmmss to YYYY-MM-DDTHH:mm:ss
+            const parts = match[1].split('-');
+            if (parts.length === 4 && parts[3].length === 6) {
+              const date = parts.slice(0, 3).join('-'); // YYYY-MM-DD
+              const time = parts[3]; // HHmmss
+              const formattedTime = `${time.slice(0, 2)}:${time.slice(2, 4)}:${time.slice(4, 6)}`; // HH:mm:ss
+              timestamp = `${date}T${formattedTime}`;
+            }
+          }
 
           return {
             filename: file,
