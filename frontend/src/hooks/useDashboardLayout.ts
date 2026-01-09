@@ -113,7 +113,7 @@ export function useDashboardLayout() {
   useEffect(() => {
     const timeoutId = setTimeout(() => {
       saveToAPI(localLayout);
-    }, 3000); // Save 3 seconds after last change (prevents rate limiting)
+    }, 10000); // Save 10 seconds after last change (prevents rate limiting)
 
     return () => clearTimeout(timeoutId);
   }, [localLayout, saveToAPI]);
