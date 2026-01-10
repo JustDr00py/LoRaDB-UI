@@ -52,7 +52,7 @@ export const CompositeGridLayout: React.FC<CompositeGridLayoutProps> = ({
         resizeHandles={['se']}
         compactType="vertical"
         preventCollision={false}
-        margin={[12, 12]}
+        margin={[8, 8]}
         containerPadding={[16, 16]}
       >
         {children}
