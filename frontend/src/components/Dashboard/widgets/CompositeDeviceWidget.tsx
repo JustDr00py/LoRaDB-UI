@@ -26,6 +26,7 @@ interface CompositeDeviceWidgetProps {
   measurementData: Array<{ measurementId: string; data: WidgetData }>;
   onUpdateInnerLayout?: (widgetId: string, newLayout: { lg: Layout[]; md?: Layout[]; sm?: Layout[] }) => void;
   onUpdateWidget?: (widgetId: string, updates: Partial<WidgetInstance>) => void;
+  editMode: boolean;
 }
 
 // Generate default grid layout from template structure (responsive)
@@ -217,9 +218,8 @@ export const CompositeDeviceWidget: React.FC<CompositeDeviceWidgetProps> = ({
   measurementData,
   onUpdateInnerLayout,
   onUpdateWidget,
+  editMode,
 }) => {
-  // Edit mode state
-  const [editMode, setEditMode] = useState(false);
   const [innerLayout, setInnerLayout] = useState<{ lg: Layout[]; md: Layout[]; sm: Layout[] }>(
     migrateToResponsiveLayout(widget, template)
   );
@@ -461,17 +461,6 @@ export const CompositeDeviceWidget: React.FC<CompositeDeviceWidgetProps> = ({
 
   return (
     <div className="composite-widget">
-      {/* Edit Mode Toggle */}
-      <div className="composite-header">
-        <button
-          className="edit-layout-btn"
-          onClick={() => setEditMode(!editMode)}
-          title={editMode ? 'Lock Layout' : 'Edit Layout'}
-        >
-          {editMode ? '🔓 Lock' : '🔒 Edit Layout'}
-        </button>
-      </div>
-
       {/* Grid Layout */}
       <CompositeGridLayout
         layout={innerLayout}

@@ -986,6 +986,21 @@ pre {
   color: var(--danger-color);
 }
 
+.edit-layout-btn-compact {
+  background: none;
+  border: none;
+  color: var(--text-secondary);
+  font-size: 1.25rem;
+  line-height: 1;
+  cursor: pointer;
+  padding: 0 5px;
+  transition: color 0.2s;
+}
+
+.edit-layout-btn-compact:hover {
+  color: var(--primary-color);
+}
+
 .widget-body {
   flex: 1;
   padding: 16px;

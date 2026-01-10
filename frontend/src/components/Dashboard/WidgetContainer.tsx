@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import type { WidgetInstance, MeasurementDefinition, DeviceTypeDefinition } from '../../types/widgets';
 import type { Layout } from 'react-grid-layout';
 import { useWidgetData } from '../../hooks/useWidgetData';
@@ -36,6 +36,9 @@ export const WidgetContainer: React.FC<WidgetContainerProps> = ({
   const isComposite = !!widget.templateId && !!deviceType;
   const template = deviceType?.widgetTemplates?.find((t) => t.id === widget.templateId);
 
+  // Edit mode state for composite widgets
+  const [editMode, setEditMode] = useState(false);
+
   // Fetch data based on widget type
   const legacyResult = useWidgetData(
     widget,
@@ -65,6 +68,15 @@ export const WidgetContainer: React.FC<WidgetContainerProps> = ({
       <div className="widget-header">
         <h3>{title}</h3>
         <div className="widget-actions">
+          {isComposite && (
+            <button
+              className="edit-layout-btn-compact"
+              onClick={() => setEditMode(!editMode)}
+              title={editMode ? 'Lock Layout' : 'Edit Layout'}
+            >
+              {editMode ? '🔓' : '🔒'}
+            </button>
+          )}
           <button onClick={onEdit} className="widget-edit-btn" title="Edit widget">
             ✎
           </button>
@@ -98,6 +110,7 @@ export const WidgetContainer: React.FC<WidgetContainerProps> = ({
                 measurementData={data}
                 onUpdateInnerLayout={onUpdateInnerLayout}
                 onUpdateWidget={onUpdateWidget}
+                editMode={editMode}
               />
             ) : (
               measurement && !Array.isArray(data) && (
