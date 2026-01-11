@@ -4,9 +4,10 @@
     "elsys-ers.json",
     "generic.json",
     "mclimate-16aspm.json",
+    "milesight-am103l.json",
     "milesight-em300-th.json",
     "milesight-ws303.json"
   ],
   "version": "1.0.0",
-  "lastUpdated": "2026-01-10T05:20:05Z"
+  "lastUpdated": "2026-01-11T19:59:02Z"
 }
