@@ -16,10 +16,10 @@ export type ThresholdOperator = '<' | '<=' | '>' | '>=' | '=' | 'between';
 
 // Threshold definition for current value widgets
 export interface Threshold {
-  operator: ThresholdOperator;
+  operator?: ThresholdOperator;  // Optional for backward compatibility with min/max format
   value?: number;        // For <, <=, >, >=, = operators
-  min?: number;          // For 'between' operator
-  max?: number;          // For 'between' operator
+  min?: number;          // For 'between' operator or legacy min/max format
+  max?: number;          // For 'between' operator or legacy min/max format
   color: string;
   label: string;         // Default label (e.g., "Low", "Normal", "High")
   customLabel?: string;  // Optional custom label to override default
@@ -168,6 +168,7 @@ export interface WidgetInstance {
       customTitle?: string;       // Override measurement title/name
       customUnit?: string;        // Override measurement unit (e.g., "% RH" instead of "%")
       hideBorder?: boolean;       // Hide the border around this measurement widget
+      showThresholdLabels?: boolean; // Show threshold labels for current-value widgets
       // Widget-specific customizations
       customColor?: string;       // Override color for time-series and gauge
       customThresholds?: Threshold[]; // Override thresholds for current-value

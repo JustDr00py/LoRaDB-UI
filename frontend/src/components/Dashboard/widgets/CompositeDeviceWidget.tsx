@@ -295,6 +295,7 @@ export const CompositeDeviceWidget: React.FC<CompositeDeviceWidgetProps> = ({
                 ...measurement.widgets['current-value'],
                 thresholds: overrides?.customThresholds || measurement.widgets['current-value']?.thresholds,
               }}
+              showThresholdLabels={overrides?.showThresholdLabels ?? true}
             />
           );
         case 'status':

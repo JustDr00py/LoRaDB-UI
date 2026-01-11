@@ -17,6 +17,7 @@ interface MeasurementCustomizationModalProps {
     customTitle?: string;
     customUnit?: string;
     hideBorder?: boolean;
+    showThresholdLabels?: boolean;
     customColor?: string;
     customThresholds?: Threshold[];
     customStatusConditions?: StatusCondition[];
@@ -28,6 +29,7 @@ interface MeasurementCustomizationModalProps {
     customTitle?: string;
     customUnit?: string;
     hideBorder?: boolean;
+    showThresholdLabels?: boolean;
     customColor?: string;
     customThresholds?: Threshold[];
     customStatusConditions?: StatusCondition[];
@@ -46,6 +48,7 @@ export const MeasurementCustomizationModal: React.FC<MeasurementCustomizationMod
   const [customTitle, setCustomTitle] = useState<string>('');
   const [customUnit, setCustomUnit] = useState<string>('');
   const [hideBorder, setHideBorder] = useState<boolean>(false);
+  const [showThresholdLabels, setShowThresholdLabels] = useState<boolean>(false);
   const [customColor, setCustomColor] = useState<string>('');
   const [thresholds, setThresholds] = useState<Threshold[]>([]);
   const [statusConditions, setStatusConditions] = useState<StatusCondition[]>([]);
@@ -63,6 +66,9 @@ export const MeasurementCustomizationModal: React.FC<MeasurementCustomizationMod
 
     // Hide border
     setHideBorder(currentOverrides?.hideBorder || false);
+
+    // Show threshold labels (default to true for backward compatibility)
+    setShowThresholdLabels(currentOverrides?.showThresholdLabels ?? true);
 
     // Color (for time-series and gauge)
     if (widgetType === 'time-series') {
@@ -102,6 +108,7 @@ export const MeasurementCustomizationModal: React.FC<MeasurementCustomizationMod
       customTitle?: string;
       customUnit?: string;
       hideBorder?: boolean;
+      showThresholdLabels?: boolean;
       customColor?: string;
       customThresholds?: Threshold[];
       customStatusConditions?: StatusCondition[];
@@ -120,6 +127,11 @@ export const MeasurementCustomizationModal: React.FC<MeasurementCustomizationMod
 
     // Save hide border setting
     overrides.hideBorder = hideBorder;
+
+    // Save show threshold labels setting (for current-value)
+    if (widgetType === 'current-value') {
+      overrides.showThresholdLabels = showThresholdLabels;
+    }
 
     if (widgetType === 'time-series' && customColor) {
       overrides.customColor = customColor;
@@ -326,6 +338,20 @@ export const MeasurementCustomizationModal: React.FC<MeasurementCustomizationMod
               <p className="form-help">
                 Define color-coded thresholds based on the value. First matching condition wins.
               </p>
+
+              <div className="form-group" style={{ marginBottom: '16px' }}>
+                <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}>
+                  <input
+                    type="checkbox"
+                    checked={showThresholdLabels}
+                    onChange={(e) => setShowThresholdLabels(e.target.checked)}
+                  />
+                  Show current threshold label
+                </label>
+                <p className="form-help">
+                  Displays the current threshold status (e.g., "Good", "Poor") with its color below the value.
+                </p>
+              </div>
 
               {thresholds.map((threshold, index) => (
                 <div key={index} className="threshold-config">
