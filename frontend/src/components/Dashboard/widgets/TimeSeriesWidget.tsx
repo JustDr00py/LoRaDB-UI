@@ -131,11 +131,14 @@ export const TimeSeriesWidget: React.FC<TimeSeriesWidgetProps> = ({
 
   return (
     <div className="time-series-widget">
-      <ReactECharts
-        option={option}
-        style={{ height: '100%', width: '100%' }}
-        opts={{ renderer: 'canvas' }}
-      />
+      <div className="widget-title">{measurement.name}</div>
+      <div className="chart-container">
+        <ReactECharts
+          option={option}
+          style={{ height: '100%', width: '100%' }}
+          opts={{ renderer: 'canvas' }}
+        />
+      </div>
     </div>
   );
 };

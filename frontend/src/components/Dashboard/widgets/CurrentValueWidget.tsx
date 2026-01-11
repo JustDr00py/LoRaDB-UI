@@ -69,18 +69,21 @@ export const CurrentValueWidget: React.FC<CurrentValueWidgetProps> = ({
 
   return (
     <div className="current-value-widget" style={{ borderLeftColor: color }}>
-      <div className="value" style={{ color }}>
-        {valueType === 'string' && typeof data.currentValue === 'string' ? (
-          data.currentValue
-        ) : typeof data.currentValue === 'number' && displayDecimals !== undefined ? (
-          data.currentValue.toFixed(displayDecimals)
-        ) : (
-          '-'
+      <div className="measurement-name">{measurement.name}</div>
+      <div className="value-container">
+        <div className="value" style={{ color }}>
+          {valueType === 'string' && typeof data.currentValue === 'string' ? (
+            data.currentValue
+          ) : typeof data.currentValue === 'number' && displayDecimals !== undefined ? (
+            data.currentValue.toFixed(displayDecimals)
+          ) : (
+            '-'
+          )}
+        </div>
+        {valueType === 'number' && typeof data.currentValue === 'number' && displayUnit && (
+          <div className="unit">{displayUnit}</div>
         )}
       </div>
-      {valueType === 'number' && typeof data.currentValue === 'number' && displayUnit && (
-        <div className="unit">{displayUnit}</div>
-      )}
       {label && <div className="threshold-label">{label}</div>}
       {data.timestamp && (
         <div className="timestamp">{formatRelativeTime(data.timestamp)}</div>

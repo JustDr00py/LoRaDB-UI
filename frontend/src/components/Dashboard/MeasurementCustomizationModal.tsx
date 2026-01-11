@@ -14,6 +14,9 @@ interface MeasurementCustomizationModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSave: (overrides: {
+    customTitle?: string;
+    customUnit?: string;
+    hideBorder?: boolean;
     customColor?: string;
     customThresholds?: Threshold[];
     customStatusConditions?: StatusCondition[];
@@ -22,6 +25,9 @@ interface MeasurementCustomizationModalProps {
   measurement: MeasurementDefinition;
   widgetType: WidgetType;
   currentOverrides?: {
+    customTitle?: string;
+    customUnit?: string;
+    hideBorder?: boolean;
     customColor?: string;
     customThresholds?: Threshold[];
     customStatusConditions?: StatusCondition[];
@@ -37,6 +43,9 @@ export const MeasurementCustomizationModal: React.FC<MeasurementCustomizationMod
   widgetType,
   currentOverrides,
 }) => {
+  const [customTitle, setCustomTitle] = useState<string>('');
+  const [customUnit, setCustomUnit] = useState<string>('');
+  const [hideBorder, setHideBorder] = useState<boolean>(false);
   const [customColor, setCustomColor] = useState<string>('');
   const [thresholds, setThresholds] = useState<Threshold[]>([]);
   const [statusConditions, setStatusConditions] = useState<StatusCondition[]>([]);
@@ -45,6 +54,15 @@ export const MeasurementCustomizationModal: React.FC<MeasurementCustomizationMod
   // Initialize state from current overrides or measurement defaults
   useEffect(() => {
     if (!isOpen) return;
+
+    // Custom title
+    setCustomTitle(currentOverrides?.customTitle || '');
+
+    // Custom unit
+    setCustomUnit(currentOverrides?.customUnit || '');
+
+    // Hide border
+    setHideBorder(currentOverrides?.hideBorder || false);
 
     // Color (for time-series and gauge)
     if (widgetType === 'time-series') {
@@ -81,11 +99,27 @@ export const MeasurementCustomizationModal: React.FC<MeasurementCustomizationMod
 
   const handleSave = () => {
     const overrides: {
+      customTitle?: string;
+      customUnit?: string;
+      hideBorder?: boolean;
       customColor?: string;
       customThresholds?: Threshold[];
       customStatusConditions?: StatusCondition[];
       customGaugeZones?: GaugeZone[];
     } = {};
+
+    // Save custom title if set
+    if (customTitle && customTitle.trim() !== '') {
+      overrides.customTitle = customTitle.trim();
+    }
+
+    // Save custom unit if set
+    if (customUnit && customUnit.trim() !== '') {
+      overrides.customUnit = customUnit.trim();
+    }
+
+    // Save hide border setting
+    overrides.hideBorder = hideBorder;
 
     if (widgetType === 'time-series' && customColor) {
       overrides.customColor = customColor;
@@ -210,6 +244,60 @@ export const MeasurementCustomizationModal: React.FC<MeasurementCustomizationMod
             <p>
               <strong>Widget Type:</strong> {widgetType.split('-').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ')}
             </p>
+          </div>
+
+          {/* Custom Title */}
+          <div className="form-section">
+            <h3>Display Name</h3>
+            <div className="form-group">
+              <label>Custom Title:</label>
+              <input
+                type="text"
+                placeholder={measurement.name}
+                value={customTitle}
+                onChange={(e) => setCustomTitle(e.target.value)}
+                className="form-input"
+              />
+              <p className="form-help">
+                Leave empty to use the default name: "{measurement.name}"
+              </p>
+            </div>
+          </div>
+
+          {/* Custom Unit */}
+          <div className="form-section">
+            <h3>Unit of Measurement</h3>
+            <div className="form-group">
+              <label>Custom Unit:</label>
+              <input
+                type="text"
+                placeholder={measurement.unit}
+                value={customUnit}
+                onChange={(e) => setCustomUnit(e.target.value)}
+                className="form-input"
+              />
+              <p className="form-help">
+                Leave empty to use the default unit: "{measurement.unit}". Example: "% RH" for relative humidity.
+              </p>
+            </div>
+          </div>
+
+          {/* Hide Border */}
+          <div className="form-section">
+            <h3>Appearance</h3>
+            <div className="form-group">
+              <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}>
+                <input
+                  type="checkbox"
+                  checked={hideBorder}
+                  onChange={(e) => setHideBorder(e.target.checked)}
+                />
+                Hide border around widget
+              </label>
+              <p className="form-help">
+                Removes the border and background from this measurement widget for a cleaner look.
+              </p>
+            </div>
           </div>
 
           {/* Time Series Color */}

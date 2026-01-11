@@ -252,7 +252,11 @@ export const CompositeDeviceWidget: React.FC<CompositeDeviceWidgetProps> = ({
           return (
             <TimeSeriesWidget
               data={data}
-              measurement={measurement}
+              measurement={{
+                ...measurement,
+                name: overrides?.customTitle || measurement.name,
+                unit: overrides?.customUnit || measurement.unit,
+              }}
               config={{
                 ...measurement.widgets['time-series'],
                 color: overrides?.customColor || measurement.widgets['time-series']?.color,
@@ -265,7 +269,11 @@ export const CompositeDeviceWidget: React.FC<CompositeDeviceWidgetProps> = ({
           return (
             <GaugeWidget
               data={data}
-              measurement={measurement}
+              measurement={{
+                ...measurement,
+                name: overrides?.customTitle || measurement.name,
+                unit: overrides?.customUnit || measurement.unit,
+              }}
               config={{
                 ...measurement.widgets.gauge,
                 zones: overrides?.customGaugeZones || measurement.widgets.gauge?.zones,
@@ -278,7 +286,11 @@ export const CompositeDeviceWidget: React.FC<CompositeDeviceWidgetProps> = ({
           return (
             <CurrentValueWidget
               data={data}
-              measurement={measurement}
+              measurement={{
+                ...measurement,
+                name: overrides?.customTitle || measurement.name,
+                unit: overrides?.customUnit || measurement.unit,
+              }}
               config={{
                 ...measurement.widgets['current-value'],
                 thresholds: overrides?.customThresholds || measurement.widgets['current-value']?.thresholds,
@@ -291,6 +303,8 @@ export const CompositeDeviceWidget: React.FC<CompositeDeviceWidgetProps> = ({
               data={data}
               measurement={{
                 ...measurement,
+                name: overrides?.customTitle || measurement.name,
+                unit: overrides?.customUnit || measurement.unit,
                 widgets: {
                   ...measurement.widgets,
                   status: {
@@ -369,10 +383,11 @@ export const CompositeDeviceWidget: React.FC<CompositeDeviceWidgetProps> = ({
         displayTypes.forEach((type) => {
           const key = `${measurementId}-${type}-${sectionIdx}`;
           const yAxisOverride = widget.sectionOverrides?.[measurementId];
+          const hideBorder = widget.sectionOverrides?.[measurementId]?.hideBorder;
 
           // Render widget with wrapper for grid
           items.push(
-            <div key={key} className="inner-grid-item">
+            <div key={key} className={`inner-grid-item ${hideBorder ? 'no-border' : ''}`}>
               {editMode && (
                 <div className="inner-widget-header">
                   <span className="inner-widget-label">

@@ -165,6 +165,9 @@ export interface WidgetInstance {
       displayTypes?: WidgetType[]; // Override which visualizations to show
       customYAxisMin?: number;    // Per-measurement Y-axis minimum
       customYAxisMax?: number;    // Per-measurement Y-axis maximum
+      customTitle?: string;       // Override measurement title/name
+      customUnit?: string;        // Override measurement unit (e.g., "% RH" instead of "%")
+      hideBorder?: boolean;       // Hide the border around this measurement widget
       // Widget-specific customizations
       customColor?: string;       // Override color for time-series and gauge
       customThresholds?: Threshold[]; // Override thresholds for current-value

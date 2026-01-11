@@ -118,11 +118,14 @@ export const GaugeWidget: React.FC<GaugeWidgetProps> = ({ data, measurement, con
 
   return (
     <div className="gauge-widget">
-      <ReactECharts
-        option={option}
-        style={{ height: '100%', width: '100%' }}
-        opts={{ renderer: 'canvas' }}
-      />
+      <div className="chart-container">
+        <ReactECharts
+          option={option}
+          style={{ height: '100%', width: '100%' }}
+          opts={{ renderer: 'canvas' }}
+        />
+      </div>
+      <div className="widget-title">{measurement.name}</div>
     </div>
   );
 };
