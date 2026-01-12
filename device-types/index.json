@@ -1,6 +1,7 @@
 {
   "deviceTypes": [
     "dragino-lht65n.json",
+    "dragino-lt-22222-l.json",
     "elsys-ers.json",
     "generic.json",
     "mclimate-16aspm.json",
@@ -9,5 +10,5 @@
     "milesight-ws303.json"
   ],
   "version": "1.0.0",
-  "lastUpdated": "2026-01-11T19:59:02Z"
+  "lastUpdated": "2026-01-12T03:18:05Z"
 }

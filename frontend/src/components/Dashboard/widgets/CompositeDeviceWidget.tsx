@@ -18,6 +18,7 @@ import { GaugeWidget } from './GaugeWidget';
 import { StatusWidget } from './StatusWidget';
 import { CompositeGridLayout } from './CompositeGridLayout';
 import { MeasurementCustomizationModal } from '../MeasurementCustomizationModal';
+import { applyFormula } from '../../../utils/widgetDataProcessor';
 
 interface CompositeDeviceWidgetProps {
   widget: WidgetInstance;
@@ -235,6 +236,25 @@ export const CompositeDeviceWidget: React.FC<CompositeDeviceWidgetProps> = ({
     widgetType: null,
   });
 
+  // Helper function to apply formula to widget data
+  const applyFormulaToData = useCallback((data: WidgetData, formula?: string): WidgetData => {
+    if (!formula || typeof data.currentValue !== 'number') {
+      return data;
+    }
+
+    const transformedCurrentValue = applyFormula(data.currentValue, formula);
+    const transformedTimeSeries = data.timeSeries?.map((point) => ({
+      ...point,
+      value: applyFormula(point.value, formula),
+    }));
+
+    return {
+      ...data,
+      currentValue: transformedCurrentValue,
+      timeSeries: transformedTimeSeries,
+    };
+  }, []);
+
   // Helper function to render a widget by type
   const renderWidgetByType = useCallback(
     (
@@ -247,11 +267,14 @@ export const CompositeDeviceWidget: React.FC<CompositeDeviceWidgetProps> = ({
       // Get measurement-specific overrides
       const overrides = widget.sectionOverrides?.[measurementId];
 
+      // Apply formula transformation if present
+      const transformedData = applyFormulaToData(data, overrides?.customFormula);
+
       switch (type) {
         case 'time-series':
           return (
             <TimeSeriesWidget
-              data={data}
+              data={transformedData}
               measurement={{
                 ...measurement,
                 name: overrides?.customTitle || measurement.name,
@@ -268,7 +291,7 @@ export const CompositeDeviceWidget: React.FC<CompositeDeviceWidgetProps> = ({
         case 'gauge':
           return (
             <GaugeWidget
-              data={data}
+              data={transformedData}
               measurement={{
                 ...measurement,
                 name: overrides?.customTitle || measurement.name,
@@ -280,12 +303,13 @@ export const CompositeDeviceWidget: React.FC<CompositeDeviceWidgetProps> = ({
               }}
               widget={widget}
               yAxisOverride={yAxisOverride}
+              showThresholdLabels={overrides?.showThresholdLabels ?? true}
             />
           );
         case 'current-value':
           return (
             <CurrentValueWidget
-              data={data}
+              data={transformedData}
               measurement={{
                 ...measurement,
                 name: overrides?.customTitle || measurement.name,
@@ -301,7 +325,7 @@ export const CompositeDeviceWidget: React.FC<CompositeDeviceWidgetProps> = ({
         case 'status':
           return (
             <StatusWidget
-              data={data}
+              data={transformedData}
               measurement={{
                 ...measurement,
                 name: overrides?.customTitle || measurement.name,
@@ -320,7 +344,7 @@ export const CompositeDeviceWidget: React.FC<CompositeDeviceWidgetProps> = ({
           return <div className="widget-error">Unknown widget type: {type}</div>;
       }
     },
-    [widget]
+    [widget, applyFormulaToData]
   );
 
   // Apply custom section ordering if specified
@@ -451,6 +475,10 @@ export const CompositeDeviceWidget: React.FC<CompositeDeviceWidgetProps> = ({
 
   // Handle saving customization
   const handleSaveCustomization = (overrides: {
+    customTitle?: string;
+    customUnit?: string;
+    hideBorder?: boolean;
+    showThresholdLabels?: boolean;
     customColor?: string;
     customThresholds?: Threshold[];
     customStatusConditions?: StatusCondition[];

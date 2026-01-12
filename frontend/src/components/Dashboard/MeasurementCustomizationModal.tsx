@@ -128,8 +128,8 @@ export const MeasurementCustomizationModal: React.FC<MeasurementCustomizationMod
     // Save hide border setting
     overrides.hideBorder = hideBorder;
 
-    // Save show threshold labels setting (for current-value)
-    if (widgetType === 'current-value') {
+    // Save show threshold labels setting (for current-value and gauge)
+    if (widgetType === 'current-value' || widgetType === 'gauge') {
       overrides.showThresholdLabels = showThresholdLabels;
     }
 
@@ -559,6 +559,20 @@ export const MeasurementCustomizationModal: React.FC<MeasurementCustomizationMod
             <div className="form-section">
               <h3>Gauge Zones</h3>
               <p className="form-help">Define color zones for the gauge.</p>
+
+              <div className="form-group" style={{ marginBottom: '16px' }}>
+                <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}>
+                  <input
+                    type="checkbox"
+                    checked={showThresholdLabels}
+                    onChange={(e) => setShowThresholdLabels(e.target.checked)}
+                  />
+                  Show threshold status label
+                </label>
+                <p className="form-help">
+                  Displays the current threshold status (e.g., "Normal", "Warm", "Hot") below the gauge.
+                </p>
+              </div>
 
               {gaugeZones.map((zone, index) => (
                 <div key={index} className="gauge-zone-config">

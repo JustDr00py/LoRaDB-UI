@@ -169,6 +169,7 @@ export interface WidgetInstance {
       customUnit?: string;        // Override measurement unit (e.g., "% RH" instead of "%")
       hideBorder?: boolean;       // Hide the border around this measurement widget
       showThresholdLabels?: boolean; // Show threshold labels for current-value widgets
+      customFormula?: string;     // Mathematical formula to transform value (e.g., "value * 1.8 + 32")
       // Widget-specific customizations
       customColor?: string;       // Override color for time-series and gauge
       customThresholds?: Threshold[]; // Override thresholds for current-value
