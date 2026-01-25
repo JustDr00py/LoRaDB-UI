@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
   LineChart,
   Line,
@@ -9,6 +9,7 @@ import {
   ResponsiveContainer,
   Area,
   AreaChart,
+  Brush,
 } from 'recharts';
 import type { WidgetData, TimeSeriesWidgetConfig, MeasurementDefinition, WidgetInstance } from '../../../types/widgets';
 import { formatDate } from '../../../utils/dateFormatter';
@@ -32,6 +33,9 @@ export const TimeSeriesWidget: React.FC<TimeSeriesWidgetProps> = ({
   widget,
   yAxisOverride,
 }) => {
+  // State for zoom/brush control
+  const [brushIndexes, setBrushIndexes] = useState<{ startIndex?: number; endIndex?: number }>({});
+
   if (data.error) {
     return <div className="widget-error">{data.error}</div>;
   }
@@ -103,14 +107,50 @@ export const TimeSeriesWidget: React.FC<TimeSeriesWidgetProps> = ({
     return formatDate(new Date(timestamp).toISOString());
   };
 
+  const handleBrushChange = (brushData: { startIndex?: number; endIndex?: number }) => {
+    setBrushIndexes(brushData);
+  };
+
+  const handleResetZoom = () => {
+    setBrushIndexes({});
+  };
+
+  const isZoomed = brushIndexes.startIndex !== undefined || brushIndexes.endIndex !== undefined;
+
+  // Filter chart data based on brush selection
+  const visibleData = isZoomed && brushIndexes.startIndex !== undefined && brushIndexes.endIndex !== undefined
+    ? chartData.slice(brushIndexes.startIndex, brushIndexes.endIndex + 1)
+    : chartData;
+
   const ChartComponent = config.showArea ? AreaChart : LineChart;
 
   return (
     <div className="time-series-widget">
-      <div className="widget-title">{measurement.name}</div>
+      <div className="widget-title">
+        {measurement.name}
+        {isZoomed && (
+          <button
+            onClick={handleResetZoom}
+            className="reset-zoom-btn"
+            title="Reset zoom"
+            style={{
+              marginLeft: '10px',
+              padding: '2px 8px',
+              fontSize: '11px',
+              background: '#f3f4f6',
+              border: '1px solid #d1d5db',
+              borderRadius: '4px',
+              cursor: 'pointer',
+              color: '#374151',
+            }}
+          >
+            Reset Zoom
+          </button>
+        )}
+      </div>
       <div className="chart-container">
         <ResponsiveContainer width="100%" height="100%">
-          <ChartComponent data={chartData}>
+          <ChartComponent data={visibleData}>
             <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
             <XAxis
               dataKey="timestamp"
@@ -158,6 +198,17 @@ export const TimeSeriesWidget: React.FC<TimeSeriesWidgetProps> = ({
                 activeDot={{ r: 5 }}
               />
             )}
+            <Brush
+              dataKey="timestamp"
+              height={30}
+              stroke={lineColor}
+              fill="#f9fafb"
+              tickFormatter={formatXAxis}
+              onChange={handleBrushChange}
+              startIndex={brushIndexes.startIndex}
+              endIndex={brushIndexes.endIndex}
+              data={chartData}
+            />
           </ChartComponent>
         </ResponsiveContainer>
       </div>
